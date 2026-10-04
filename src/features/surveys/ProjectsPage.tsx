@@ -2,7 +2,7 @@ import { PlanEditor } from "../plans/PlanEditor";
 import { ReportsPanel } from "../reports/ReportsPanel";
 import { prepareImage, imageDataURL } from "../../domain/images";
 import { useEffect, useRef, useState } from "react";
-import { useApp } from "../../App";
+import { useApp, useActivity } from "../../App";
 import { Icon } from "../../components/Icon";
 import {
   mountain,
@@ -152,6 +152,18 @@ function ProjectDetail({ project: p }: { project: Project }) {
   const [pointId, setPointId] = useState(p.points[0]?.id || "");
   const point = p.points.find((x) => x.id === pointId) || p.points[0];
   const [pointName, setPointName] = useState("");
+  const [editPointName, setEditPointName] = useState(point.name);
+  const [editPointDescription, setEditPointDescription] = useState(
+    point.description,
+  );
+  useEffect(() => {
+    setEditPointName(point.name);
+    setEditPointDescription(point.description);
+  }, [point.id]);
+  useActivity(
+    "point-metadata",
+    editPointName !== point.name || editPointDescription !== point.description,
+  );
   const [object, setObject] = useState<ObjectKind>("建筑轴线");
   const [north, setNorth] = useState<KnownNorth>("magnetic");
   const [basis, setBasis] = useState("");
@@ -162,6 +174,17 @@ function ProjectDetail({ project: p }: { project: Project }) {
   const [editLocation, setEditLocation] = useState(p.location);
   const [latitude, setLatitude] = useState(p.latitude?.toString() || "");
   const [longitude, setLongitude] = useState(p.longitude?.toString() || "");
+  useActivity(
+    "project-metadata",
+    editName !== p.name ||
+      editLocation !== p.location ||
+      latitude !== (p.latitude?.toString() || "") ||
+      longitude !== (p.longitude?.toString() || ""),
+  );
+  useActivity(
+    "adoption-form",
+    !!basis.trim() || !!reason.trim() || !!angle.trim(),
+  );
   const adoption = p.adoptions.find((a) => a.id === p.activeAdoptionId);
   const measurements = p.measurements.filter(
     (m) =>
@@ -217,7 +240,13 @@ function ProjectDetail({ project: p }: { project: Project }) {
         next.adoptions.push(revision);
         next.activeAdoptionId = revision.id;
       })
-        .then(() => app.announce("坐向修订已记录"))
+        .then(() => {
+          setBasis("");
+          setReason("");
+          setAngle("");
+          setManual(false);
+          app.announce("坐向修订已记录");
+        })
         .catch(() => {});
     } catch (e) {
       app.announce((e as Error).message);
@@ -321,6 +350,40 @@ function ProjectDetail({ project: p }: { project: Project }) {
                 ))}
               </select>
             </label>
+            <details>
+              <summary>编辑当前测点</summary>
+              <label>
+                当前测点名称
+                <input
+                  value={editPointName}
+                  onChange={(e) => setEditPointName(e.target.value)}
+                />
+              </label>
+              <label>
+                测点说明
+                <textarea
+                  value={editPointDescription}
+                  onChange={(e) => setEditPointDescription(e.target.value)}
+                />
+              </label>
+              <button
+                disabled={!!p.archivedAt || app.mode === "readonly"}
+                onClick={() => {
+                  if (!editPointName.trim()) {
+                    app.announce("请填写测点名称");
+                    return;
+                  }
+                  void edit((project) => {
+                    const pt = project.points.find((pt) => pt.id === point.id)!;
+                    pt.name = editPointName.trim();
+                    pt.description = editPointDescription;
+                    pt.updatedAt = nowISO();
+                  }).catch(() => {});
+                }}
+              >
+                保存测点资料
+              </button>
+            </details>
             <details>
               <summary>新增测点</summary>
               <label>
@@ -636,6 +699,16 @@ function ObservationEditor({
     return () => clearTimeout(timeout);
   }, [draft]);
   const app = useApp();
+  useActivity(
+    `observation-${o.id}`,
+    draft.fact !== o.fact ||
+      draft.judgment !== o.judgment ||
+      draft.category !== o.category ||
+      draft.direction !== o.direction ||
+      draft.north !== o.north ||
+      draft.knowledgeId !== o.knowledgeId ||
+      draft.attachmentIds.join() !== o.attachmentIds.join(),
+  );
   async function uploadPhoto(file: File) {
     try {
       const image = await prepareImage(file, "photo");

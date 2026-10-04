@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { usePwa } from "./pwa/usePwa";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { useWorkspace } from "./storage/useWorkspace";
 import { Icon } from "./components/Icon";
 import { CompassPage } from "./features/compass/CompassPage";
@@ -7,6 +14,9 @@ import { KnowledgePage } from "./features/knowledge/KnowledgePage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import type { Project } from "./domain/model";
 type Context = ReturnType<typeof useWorkspace> & {
+  activity: (key: string, active: boolean) => void;
+  busy: boolean;
+  pwa: ReturnType<typeof usePwa>;
   selectedId: string;
   select: (id: string) => void;
   project: Project | undefined;
@@ -19,8 +29,38 @@ export function useApp() {
   if (!value) throw new Error("工作区尚未初始化");
   return value;
 }
+export function useActivity(key: string, active: boolean) {
+  const app = useApp();
+  useEffect(() => {
+    app.activity(key, active);
+    return () => app.activity(key, false);
+  }, [app.activity, key, active]);
+}
 export default function App() {
   const workspace = useWorkspace();
+  const [activities, setActivities] = useState<Record<string, boolean>>({});
+  const activity = useCallback(
+    (key: string, active: boolean) =>
+      setActivities((previous) =>
+        previous[key] === active ? previous : { ...previous, [key]: active },
+      ),
+    [],
+  );
+  const busy =
+    workspace.pending > 0 ||
+    !!workspace.error ||
+    Object.values(activities).some(Boolean);
+  const pwa = usePwa(busy);
+  useEffect(() => {
+    const guard = (event: BeforeUnloadEvent) => {
+      if (busy) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, [busy]);
   const [selectedId, select] = useState("");
   const [notice, announce] = useState("");
   const [route, setRoute] = useState(location.hash.slice(1) || "/compass");
@@ -52,6 +92,9 @@ export default function App() {
   ];
   const context = {
     ...workspace,
+    activity,
+    busy,
+    pwa,
     selectedId: project?.id || "",
     select,
     project,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useApp } from "../../App";
+import { useApp, useActivity } from "../../App";
 import {
   createBackup,
   readBackup,
@@ -22,6 +22,7 @@ export function SettingsPage({
   const [error, setError] = useState("");
   const [storage, setStorage] = useState("尚未检查");
   const [persisted, setPersisted] = useState("尚未检查");
+  useActivity("backup-operation", working);
   const allAttachments = app.data.projects.reduce(
     (n, p) => n + p.attachments.length,
     0,
@@ -174,6 +175,43 @@ export function SettingsPage({
         </div>
       )}
       <div className="settings-grid">
+        <section className="card">
+          <h2>离线与安装</h2>
+          <p role="status">{app.pwa.offline}</p>
+          <p>
+            {app.pwa.online ? "当前联网" : "当前离线"} ·{" "}
+            {app.pwa.standalone ? "已安装为应用" : "浏览器中使用"}
+          </p>
+          <p className="muted">
+            离线就绪表示核心资源已缓存，不代表项目已备份或设备测向已验证。
+          </p>
+          <div className="button-row">
+            <button
+              disabled={!app.pwa.online || working}
+              onClick={() => void app.pwa.prepare()}
+            >
+              重新准备离线资源
+            </button>
+            {app.pwa.install && (
+              <button onClick={() => void app.pwa.install?.()}>
+                安装到设备
+              </button>
+            )}
+            {app.pwa.waiting && (
+              <button disabled={app.busy} onClick={app.pwa.update}>
+                保存后更新应用
+              </button>
+            )}
+          </div>
+          {app.pwa.waiting && (
+            <p>新版本已准备好，可稍后更新；所有页面保存或停止测量后才刷新。</p>
+          )}
+          {!app.pwa.install && !app.pwa.standalone && (
+            <p>
+              iPhone／iPad：在支持的浏览器分享菜单中选择“添加到主屏幕”。其他浏览器可在菜单中查找安装入口；不支持安装时仍可作为网页使用。
+            </p>
+          )}
+        </section>
         <section className="card">
           <h2>显示主题</h2>
           <label>

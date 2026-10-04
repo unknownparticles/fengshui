@@ -9,7 +9,9 @@ test("图纸、照片、历史报告与完整备份跨浏览器恢复", async ({
   await page.getByLabel("项目名称", { exact: true }).fill("备份测试住宅");
   await page.getByRole("button", { name: "建立项目", exact: true }).click();
   await expect(page).toHaveURL(/#\/projects\/[a-f0-9-]+$/);
-  await expect(page.getByRole('heading',{name:'备份测试住宅',exact:true})).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "备份测试住宅", exact: true }),
+  ).toBeVisible();
   const projectURL = page.url();
   await page.getByLabel("详细地点（可选）").fill("详细私密地址");
   await page.getByLabel("纬度（可选）").fill("31");
@@ -91,9 +93,11 @@ test("图纸、照片、历史报告与完整备份跨浏览器恢复", async ({
   await page.getByRole("link", { name: "继续测量", exact: true }).click();
   for (const angle of ["179", "180", "181"]) {
     await page.getByLabel("方位角（度）", { exact: true }).fill(angle);
-    await expect(page.locator('.angle')).toContainText(`${Number(angle).toFixed(1)}`);
+    await expect(page.locator(".angle")).toContainText(
+      `${Number(angle).toFixed(1)}`,
+    );
     await page.getByRole("button", { name: "锁定读数", exact: true }).click();
-    await expect(page.getByLabel('方位角（度）')).toBeDisabled();
+    await expect(page.getByLabel("方位角（度）")).toBeDisabled();
     await page.getByRole("button", { name: "保存测量", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "本次测量已记录" }),
@@ -138,7 +142,9 @@ test("配额写入失败保留草稿，原本地数据不变且仍可导出", as
   await expect(
     page.getByText("测试配额不足", { exact: false }).first(),
   ).toBeVisible();
-  await expect(page.getByLabel("方位角（度）", { exact: true })).toHaveValue("180");
+  await expect(page.getByLabel("方位角（度）", { exact: true })).toHaveValue(
+    "180",
+  );
   expect(
     await page.evaluate(async () => {
       const req = indexedDB.open("fengshui:/fengshui/:workspace");

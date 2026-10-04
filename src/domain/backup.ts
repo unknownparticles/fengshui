@@ -113,7 +113,7 @@ export async function createBackup(workspace: Workspace): Promise<Uint8Array> {
   demand(result.length <= BACKUP_LIMITS.compressed, "备份压缩体积超过 100 MiB");
   return result;
 }
-function validateSnapshot(p: ProjectSnapshot) {
+export function validateSnapshot(p: ProjectSnapshot) {
   demand(
     idOK(p.id) &&
       typeof p.name === "string" &&

@@ -1,5 +1,6 @@
+import { DevicePanel } from "./DevicePanel";
 import { useState } from "react";
-import { useApp } from "../../App";
+import { useApp, useActivity } from "../../App";
 import { CompassDial } from "../../components/CompassDial";
 import { Icon } from "../../components/Icon";
 import {
@@ -35,6 +36,7 @@ export function CompassPage() {
   const [locked, setLocked] = useState<Measurement | null>(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  useActivity("compass-draft", !!text.trim() && !saved);
   let current: number | null = null;
   let invalid = "";
   if (text.trim()) {
@@ -404,6 +406,7 @@ export function CompassPage() {
               </dl>
             </details>
           </section>
+          <DevicePanel />
           <section className="card field-note">
             <span className="tiny-label">现场提示</span>
             <h3>先明确对象，再确定坐向</h3>

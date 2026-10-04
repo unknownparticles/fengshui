@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useApp } from "../../App";
+import { useApp, useActivity } from "../../App";
 import {
   parseAngle,
   NORTH_LABEL,
@@ -32,6 +32,7 @@ export function PlanEditor({ project: p }: { project: Project }) {
   const [confirmed, setConfirmed] = useState(!!prior);
   const url = useMemo(() => (image ? imageDataURL(image) : ""), [image?.id]);
   const stale = prior && prior.adoptionId !== p.activeAdoptionId;
+  useActivity("plan-editor", loading || (!!image && !confirmed));
   const edit = async (fn: (p: Project) => void) => {
     await app.mutate((data) => {
       const project = data.projects.find((x) => x.id === p.id)!;

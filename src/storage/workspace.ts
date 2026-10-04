@@ -1,4 +1,5 @@
 import { openDB, type IDBPDatabase } from "idb";
+import { validateSnapshot } from "../domain/backup";
 import {
   emptyWorkspace,
   SCHEMA_VERSION,
@@ -35,8 +36,28 @@ export class WorkspaceStore {
         (raw && raw.schemaVersion !== SCHEMA_VERSION)
       ) {
         this.mode = "readonly";
-        this.memory =
-          raw && Array.isArray(raw.projects) ? raw : emptyWorkspace();
+        this.memory = {
+          schemaVersion: raw?.schemaVersion || SCHEMA_VERSION,
+          revision: Number.isInteger(raw?.revision) ? raw.revision : 0,
+          projects: Array.isArray(raw?.projects)
+            ? raw.projects.filter((project: unknown) => {
+                try {
+                  const p = project as Workspace["projects"][number];
+                  validateSnapshot(p);
+                  if (!Array.isArray(p.reports)) return false;
+                  return p.reports.every((report) => {
+                    validateSnapshot(report.snapshot);
+                    return (
+                      Array.isArray(report.sources) &&
+                      Array.isArray(report.knowledge)
+                    );
+                  });
+                } catch {
+                  return false;
+                }
+              })
+            : [],
+        };
       } else {
         this.mode = "persistent";
         this.memory = raw || emptyWorkspace();
