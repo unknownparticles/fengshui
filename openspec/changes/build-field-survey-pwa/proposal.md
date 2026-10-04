@@ -37,6 +37,6 @@
 
 ## Impact
 
-后续将新增静态前端、方向计算模块、传感器适配层、规则数据、IndexedDB 存储、Service Worker、报告界面和 GitHub Actions。当前不引入实际运行依赖、不配置远端、不发布站点。
+后续将新增静态前端、方向计算模块、传感器适配层、规则数据、IndexedDB 存储、Service Worker、报告界面和 GitHub Actions。当前完成资料与规格，已关联 Git 远端；应用及发布流程尚未实现。
 
-部署目标为 `https://<owner>.github.io/<repo>/`，本地目录名 `fengshui` 仅作为默认构建路径参考；GitHub 所有者和实际仓库 URL 尚未设置。技术依据与内容边界见 [资料索引](../../../docs/research/sources.md)。
+实际仓库为 `https://github.com/unknownparticles/fengshui.git`，本地 remote 为 `origin`；计划部署地址为 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。2026-10-04 核查远端暂无分支或提交，本地采用 `main` 初始分支，首次推送后核实远端默认分支。Pages 尚未部署。技术依据与内容边界见 [资料索引](../../../docs/research/sources.md)。

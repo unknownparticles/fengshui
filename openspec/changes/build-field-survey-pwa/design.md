@@ -2,7 +2,7 @@
 
 ## Context
 
-仓库从空目录初始化，当前仅有资料与 OpenSpec，尚无业务代码或远端。用户选择专业罗盘与现场堪舆，产品范围见 [proposal.md](proposal.md)，领域约定见 [domain-reference.md](../../../docs/research/domain-reference.md)，技术依据见 [sources.md](../../../docs/research/sources.md)。
+仓库从空目录初始化，当前仅有资料与 OpenSpec，尚无业务代码。Git 远端已关联 `https://github.com/unknownparticles/fengshui.git`（origin）；2026-10-04 读取远端 refs 为空，本地初始分支为 main，远端默认分支待首次推送后核实。用户选择专业罗盘与现场堪舆，产品范围见 [proposal.md](proposal.md)，领域约定见 [domain-reference.md](../../../docs/research/domain-reference.md)，技术依据见 [sources.md](../../../docs/research/sources.md)。
 
 GitHub Pages 不提供后端；项目站点默认有仓库子路径。移动浏览器存在传感器、安装、存储和打印差异，现场可能完全离线。不能用安装成功、角度小数位或读数稳定性替代精度验证。
 
@@ -116,7 +116,7 @@ SW 文件、scope、manifest URL、start_url 和 id 都使用统一 `DEPLOY_BASE
 
 CI 对 PR 运行 OpenSpec 严格校验、类型检查、关键算法／备份／迁移测试、生产构建及子路径静态冒烟；正式部署仅在配置的默认分支或人工 dispatch 上执行，通过 `configure-pages → upload-pages-artifact → deploy-pages` 发布 `dist`，部署任务依赖验证／构建，权限限定为 `contents: read`、`pages: write`、`id-token: write`，environment=`github-pages`。实际默认分支来自仓库配置，不硬编码假定当前为 main。
 
-部署说明涵盖 Pages Source=GitHub Actions、HTTPS、目标 base、安装和离线准备检查。当前没有 GitHub remote，不虚构站点 URL 或声称已启用 Pages。
+部署说明涵盖 Pages Source=GitHub Actions、HTTPS、目标 base、安装和离线准备检查。目标仓库为 `unknownparticles/fengshui`，计划 Pages 地址为 `https://unknownparticles.github.io/fengshui/`，构建 `DEPLOY_BASE_PATH=/fengshui/`；manifest 和 SW 使用相同前缀。该地址是发布目标，当前尚未启用／验证 Pages。根路径部署仍保留独立构建验收，以支持将来迁移域名。
 
 回滚重新发布前一已验证产物，旧应用仍保留对新数据的只读与原始备份出口；数据迁移不自动反向执行。发布版本、提交和规则版本均写入关于页。发布 gate 分离“自动验证通过”与“实机北向适配可启用”，未验证设备保持手录降级。
 
@@ -135,11 +135,11 @@ CI 对 PR 运行 OpenSpec 严格校验、类型检查、关键算法／备份／
 1. 按任务建立应用与规则审核清单，先完成纯手工现场闭环与本地备份。
 2. 完成传感器实机验证；不满足北向基准要求的设备继续手录。
 3. 实现离线预缓存与等待更新，验收飞行模式冷启动和保存失败恢复。
-4. 配置实际 GitHub 仓库和基路径，部署预览构建，完成项目路径及根路径验收。
+4. 向已关联的 origin 推送项目，核实 main 为远端默认分支并配置 Pages；使用 `/fengshui/` 基路径构建，完成项目路径及根路径验收。
 5. 实机矩阵通过后发布首版，记录版本／提交；应用任务全部验收完成后归档当前 OpenSpec。
 
 ## Open Questions
 
 - 最终品牌名称、配色与图标风格：不影响首版行为和任务依赖。
-- 实际 GitHub 所有者、仓库名与是否使用独立域名：路径参数已设计，配置发布时确定。
+- 是否将来迁移独立域名：首版已采用 `unknownparticles/fengshui` 项目路径，后续迁移按既有备份和基路径机制处理。
 - 后续优先采用哪套三合／三元／玄空规则版本：当前首版已明确排除，新增能力通过独立提案处理。

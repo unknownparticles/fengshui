@@ -4,6 +4,16 @@
 
 当前阶段为资料收集和 OpenSpec 设计，应用代码与发布流程尚未实现。
 
+## 仓库与部署目标
+
+- GitHub 仓库：[unknownparticles/fengshui](https://github.com/unknownparticles/fengshui)。
+- Git remote：`https://github.com/unknownparticles/fengshui.git`，本地别名 `origin`。
+- 本地初始分支：`main`。2026-10-04 核查远端可访问，尚无分支或提交；远端默认分支待首次推送后核实。
+- GitHub Pages 计划地址：[unknownparticles.github.io/fengshui/](https://unknownparticles.github.io/fengshui/)，尚未部署。
+- 项目部署基路径：`/fengshui/`；manifest 入口与 SW scope 同步采用该路径。
+
+首次发布前还需推送项目、核实远端默认分支、配置 Pages Source 为 GitHub Actions，并完成构建和实机验收。仓库地址已确定不代表 Pages 已启用。
+
 ## 阅读入口
 
 - [资料索引与研究结论](docs/research/sources.md)：已核实来源、可靠性、引用限制和对应规格。

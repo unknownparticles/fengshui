@@ -5,6 +5,8 @@ context: |
   All artifacts must be written in zh.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
   项目：专业罗盘与现场堪舆 PWA，托管于 GitHub Pages。
+  仓库：https://github.com/unknownparticles/fengshui.git，remote 为 origin，本地初始分支 main。
+  计划发布地址：https://unknownparticles.github.io/fengshui/，部署基路径 /fengshui/；Pages 尚未部署。
   首版：地盘正针二十四山、后天八卦、坐向、多测点记录、平面图方位叠加、资料库与本地报告。
   纯静态前端；核心流程离线可用；无后端、登录、云端上传或客户端密钥。
   手机传感器读数须记录来源与北向基准；未知基准不得伪装成磁北或真北。
