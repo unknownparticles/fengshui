@@ -24,6 +24,16 @@
 
 S13—S15 的“已核实”仅表示仓库与阅读内容已核查，不表示其算法／套数已确认。固定提交、具体缺陷及复用结论见 [仓库核查](github-repositories.md)。
 
+## UI 参考来源
+
+| 编号 | 来源 | 核查结论 |
+| --- | --- | --- |
+| S16 | [zhaoolee/cyber-fortune-telling](https://github.com/zhaoolee/cyber-fortune-telling) | 核实前端依赖与瓷白／墨黑主题选择器，参考组件结构；README 声明 MIT 的完整许可文件待核对 |
+| S17 | [deeptexas-ai/Zhouyi-Bagua-Divination-Source-Code](https://github.com/deeptexas-ai/Zhouyi-Bagua-Divination-Source-Code) | 核实排盘截图与 License.md；含外部依赖及 /api 流程，不能据截图认定可完整静态离线部署 |
+| S18 | [Roxy UI](https://github.com/RoxyAPI/ui) | 核实 MIT 正文、风水实时预览与主题／分块说明；二十四山现场采集、中文及离线加载需另外适配 |
+
+核查范围、固定提交与尚未定位的商店／Devpost 案例见 [UI 参考核查](ui-references.md)，采用结果见 [UI 设计约定](../design/ui-guidelines.md)。
+
 ## 研究结论与产品决策
 
 1. **现场工作闭环**：建项目 → 明确观察对象和朝向线 → 选择读数来源／北向基准 → 多次测量 → 用户确认坐向 → 记录砂水及周边环境 → 叠加平面图 → 生成报告／备份。在线地图和 AI 不构成现场前置条件。
