@@ -24,12 +24,19 @@ export function DevicePanel({
   onPreview,
   onLock,
   locked,
+  lockRef,
 }: {
   point?: Point;
   kind: "facing" | "sitting";
-  onPreview: (angle: number | null, north?: KnownNorth) => void;
+  onPreview: (
+    angle: number | null,
+    north?: KnownNorth,
+    stable?: boolean,
+    status?: string,
+  ) => void;
   onLock: (reading: Measurement) => void;
   locked: boolean;
+  lockRef: { current: (() => void) | null };
 }) {
   const app = useApp();
   const [state, setState] = useState<OrientationState>({
@@ -71,6 +78,8 @@ export function DevicePanel({
         callbacks.current.onPreview(
           next.calibration ? q.angle : null,
           next.calibration?.north,
+          q.stable,
+          q.status,
         );
       },
     );
@@ -139,6 +148,7 @@ export function DevicePanel({
       setError((e as Error).message);
     }
   }
+  lockRef.current = lock;
   return (
     <section className="card device-panel">
       <h2>设备测量与校准</h2>

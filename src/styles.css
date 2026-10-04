@@ -1188,3 +1188,88 @@ summary {
   margin-top: 16px;
   border-radius: 8px;
 }
+
+.sketch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+  gap: 24px;
+  margin: 24px 0;
+}
+.floor-plan-canvas {
+  display: block;
+  width: 100%;
+  max-height: 650px;
+  border: 1px solid var(--control);
+  background: white;
+  border-radius: 10px;
+  touch-action: none;
+}
+.draggable-room {
+  cursor: grab;
+}
+.diagram-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.opening-editor {
+  border: 1px solid var(--line);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.qi-section {
+  margin-top: 28px;
+  border-top: 1px solid var(--control);
+  padding-top: 24px;
+}
+.qi-findings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.qi-finding h4 {
+  font-size: 16px;
+  margin: 12px 0;
+}
+.qi-finding p {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.qi-finding.pending {
+  border-color: var(--control);
+}
+.qi-finding.review {
+  border-left: 3px solid var(--warning);
+}
+.qi-results {
+  margin-top: 24px;
+}
+.quick-floor-plan input[type="checkbox"] {
+  flex-shrink: 0;
+}
+.quick-floor-plan .check-label {
+  align-items: flex-start;
+}
+.check-label input {
+  margin-top: 3px !important;
+}
+.quick-floor-plan .button-row > button {
+  white-space: normal;
+}
+@media (max-width: 800px) {
+  .sketch-layout,
+  .qi-findings {
+    grid-template-columns: 1fr;
+  }
+  .quick-floor-plan .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .qi-results .floor-plan-canvas {
+    max-height: 400px;
+  }
+}
+
+.opening-editor>summary{font-size:14px;color:var(--text);padding:0;margin:0;min-height:44px;display:list-item}.qi-finding details{margin-top:8px;padding-top:0;border-top:0}.qi-finding details summary{font-size:14px;min-height:44px}.quick-floor-plan{scroll-margin-top:24px}

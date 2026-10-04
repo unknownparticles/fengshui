@@ -1,3 +1,5 @@
+import type { FloorPlan } from "./floor-plan";
+import type { QiAssessment } from "./indoor-qi";
 import type { Calibration } from "../adapters/orientation";
 import type { SourceRecord } from "../data/knowledge";
 import {
@@ -127,6 +129,8 @@ export const DEFAULT_PRIVACY: Privacy = {
   photos: false,
 };
 export interface Project {
+  floorPlans?: FloorPlan[];
+  qiAssessments?: QiAssessment[];
   id: string;
   name: string;
   location: string;

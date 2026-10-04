@@ -1,3 +1,4 @@
+import { QuickFloorPlan } from "../plans/QuickFloorPlan";
 import { PlanEditor } from "../plans/PlanEditor";
 import { ReportsPanel } from "../reports/ReportsPanel";
 import { prepareImage, imageDataURL } from "../../domain/images";
@@ -659,6 +660,7 @@ function ProjectDetail({ project: p }: { project: Project }) {
         </div>
       </div>
       <div className="project-extras">
+        <QuickFloorPlan key={p.id} project={p} />
         <PlanEditor
           key={`${p.id}:${p.attachments.filter((a) => a.kind === "plan").length}`}
           project={p}

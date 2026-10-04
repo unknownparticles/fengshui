@@ -26,7 +26,7 @@ jobs:
         if: ${{ !inputs.allow_pending_manual_checks }}
       - name: 记录手录版本发布范围
         if: ${{ inputs.allow_pending_manual_checks }}
-        run: echo '按用户授权发布已验证的手录版本；手机传感器正式锁定保持未启用，实机记录保持待完成。'
+        run: echo '按用户授权发布已验证的手录版本；设备北向不自动认证，人工参考校准测量保留来源，实机记录保持待完成。'
       - run: npm run check:spec
       - run: npm test
       - run: npm run build

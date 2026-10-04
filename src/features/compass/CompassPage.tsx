@@ -1,5 +1,5 @@
 import { DevicePanel } from "./DevicePanel";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useApp, useActivity } from "../../App";
 import { CompassDial } from "../../components/CompassDial";
 import { Icon } from "../../components/Icon";
@@ -39,7 +39,10 @@ export function CompassPage() {
   const [device, setDevice] = useState<{
     angle: number;
     north: KnownNorth;
+    stable: boolean;
+    status: string;
   } | null>(null);
+  const deviceLock = useRef<(() => void) | null>(null);
   useActivity("compass-draft", (!!text.trim() || !!locked) && !saved);
   let current: number | null = null;
   let invalid = "";
@@ -364,8 +367,12 @@ export function CompassPage() {
               {!locked ? (
                 <button
                   className="primary"
-                  disabled={!project || app.mode === "readonly"}
-                  onClick={lock}
+                  disabled={
+                    !project ||
+                    app.mode === "readonly" ||
+                    (!!device && !device.stable)
+                  }
+                  onClick={() => (device ? deviceLock.current?.() : lock())}
                 >
                   <Icon name="pin" />
                   锁定读数
@@ -415,12 +422,22 @@ export function CompassPage() {
             </details>
           </section>
           <DevicePanel
+            lockRef={deviceLock}
             point={point}
             kind={kind}
             locked={!!locked}
-            onPreview={(angle, north) => {
+            onPreview={(angle, north, stable, status) => {
               if (!locked)
-                setDevice(angle != null && north ? { angle, north } : null);
+                setDevice(
+                  angle != null && north
+                    ? {
+                        angle,
+                        north,
+                        stable: !!stable,
+                        status: status || "采样中",
+                      }
+                    : null,
+                );
             }}
             onLock={(reading) => {
               setLocked(reading);
@@ -451,14 +468,20 @@ export function CompassPage() {
             ? "保存失败 · 草稿保留"
             : locked
               ? "读数已锁定 · 精度未知"
-              : "手录 · 精度未知"}
+              : device
+                ? `人工参考${NORTH_LABEL[device.north]} · ${device.status}`
+                : "手录 · 精度未知"}
           {edge && edge.distance <= 2 ? " · 临近山界" : ""}
         </span>
         {!locked ? (
           <button
             className="primary"
-            disabled={!project || app.mode === "readonly"}
-            onClick={lock}
+            disabled={
+              !project ||
+              app.mode === "readonly" ||
+              (!!device && !device.stable)
+            }
+            onClick={() => (device ? deviceLock.current?.() : lock())}
           >
             锁定读数
           </button>

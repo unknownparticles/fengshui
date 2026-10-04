@@ -1,5 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { checkImage } from "./images";
+import { validateFloorPlan, type FloorPlan } from "./floor-plan";
 import {
   SCHEMA_VERSION,
   OBJECTS,
@@ -103,7 +104,7 @@ export async function createBackup(workspace: Workspace): Promise<Uint8Array> {
   const manifest: Manifest = {
     type: "fengshui-complete-backup",
     schemaVersion: SCHEMA_VERSION,
-    appVersion: "0.1.0",
+    appVersion: "0.2.0",
     ruleVersion: RULE_VERSION,
     exportedAt: new Date().toISOString(),
     files: records,
@@ -114,6 +115,66 @@ export async function createBackup(workspace: Workspace): Promise<Uint8Array> {
   return result;
 }
 export function validateSnapshot(p: ProjectSnapshot) {
+  if (p.floorPlans !== undefined) {
+    demand(
+      Array.isArray(p.floorPlans) && p.floorPlans.length <= 300,
+      "户型修订列表不合法",
+    );
+    const ids = new Set<string>();
+    for (const plan of p.floorPlans) {
+      demand(idOK(plan.id) && !ids.has(plan.id), "户型修订标识不合法或重复");
+      ids.add(plan.id);
+      validateFloorPlan(plan);
+    }
+  }
+  if (p.qiAssessments !== undefined) {
+    demand(
+      Array.isArray(p.qiAssessments) && p.qiAssessments.length <= 300,
+      "室内评估列表不合法",
+    );
+    for (const assessment of p.qiAssessments) {
+      demand(
+        idOK(assessment.id) &&
+          assessment.version === "indoor-qi-v1" &&
+          idOK(assessment.planId) &&
+          assessment.plan.id === assessment.planId &&
+          assessment.planRevision === assessment.plan.revision &&
+          Number.isFinite(Date.parse(assessment.createdAt)) &&
+          typeof assessment.summary === "string" &&
+          Array.isArray(assessment.findings) &&
+          assessment.findings.length <= 500,
+        "室内评估快照不完整",
+      );
+      validateFloorPlan(assessment.plan);
+      for (const finding of assessment.findings) {
+        demand(
+          idOK(finding.id) &&
+            ["structure", "observation", "pending"].includes(finding.type) &&
+            ["review", "recorded", "pending"].includes(finding.level) &&
+            [
+              finding.title,
+              finding.evidence,
+              finding.interpretation,
+              finding.advice,
+            ].every((v) => typeof v === "string") &&
+            (!finding.roomId ||
+              assessment.plan.rooms.some((r) => r.id === finding.roomId)),
+          "室内评估结论字段不合法",
+        );
+        if (finding.line)
+          demand(
+            [
+              finding.line.from.x,
+              finding.line.from.y,
+              finding.line.to.x,
+              finding.line.to.y,
+            ].every(Number.isFinite) &&
+              typeof finding.line.blocked === "boolean",
+            "评估示意线不合法",
+          );
+      }
+    }
+  }
   demand(
     idOK(p.id) &&
       typeof p.name === "string" &&
@@ -437,7 +498,27 @@ export function remapConflicts(
   existing: Project[],
 ): Project[] {
   const allIDs = new Set<string>();
+  const sketchIDs = (snapshot: ProjectSnapshot) => [
+    ...(snapshot.floorPlans || []).flatMap((plan) => [
+      plan.id,
+      ...plan.rooms.map((r) => r.id),
+      ...plan.openings.map((o) => o.id),
+      ...plan.obstacles.map((o) => o.id),
+    ]),
+    ...(snapshot.qiAssessments || []).flatMap((a) => [
+      a.id,
+      a.planId,
+      ...a.findings.map((f) => f.id),
+      ...a.plan.rooms.map((r) => r.id),
+      ...a.plan.openings.map((o) => o.id),
+      ...a.plan.obstacles.map((o) => o.id),
+    ]),
+  ];
   const collect = (p: Project) => {
+    sketchIDs(p).forEach((id) => allIDs.add(id));
+    p.reports.forEach((r) =>
+      sketchIDs(r.snapshot).forEach((id) => allIDs.add(id)),
+    );
     allIDs.add(p.id);
     [
       p.points,
@@ -453,6 +534,7 @@ export function remapConflicts(
   return projects.map((original) => {
     const p = structuredClone(original);
     let conflict = allIDs.has(p.id);
+    if (sketchIDs(p).some((id) => allIDs.has(id))) conflict = true;
     [
       p.points,
       p.measurements,
@@ -471,6 +553,32 @@ export function remapConflicts(
         return mapping.get(id)!;
       };
       const rewrite = (snapshot: ProjectSnapshot) => {
+        const rewritePlan = (plan: FloorPlan) => {
+          plan.id = map(plan.id);
+          if (plan.parentId) plan.parentId = map(plan.parentId);
+          plan.rooms.forEach((r) => {
+            r.id = map(r.id);
+          });
+          plan.openings.forEach((o) => {
+            o.id = map(o.id);
+            o.roomId = map(o.roomId);
+            if (o.toRoomId) o.toRoomId = map(o.toRoomId);
+          });
+          plan.obstacles.forEach((o) => {
+            o.id = map(o.id);
+            o.roomId = map(o.roomId);
+          });
+        };
+        snapshot.floorPlans?.forEach(rewritePlan);
+        snapshot.qiAssessments?.forEach((a) => {
+          a.id = map(a.id);
+          a.planId = map(a.planId);
+          rewritePlan(a.plan);
+          a.findings.forEach((f) => {
+            f.id = map(f.id);
+            if (f.roomId) f.roomId = map(f.roomId);
+          });
+        });
         snapshot.id = map(snapshot.id);
         snapshot.points.forEach((x) => {
           x.id = map(x.id);
