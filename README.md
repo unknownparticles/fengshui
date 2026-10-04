@@ -7,6 +7,7 @@
 ## 阅读入口
 
 - [资料索引与研究结论](docs/research/sources.md)：已核实来源、可靠性、引用限制和对应规格。
+- [用户提供的 GitHub 仓库核查](docs/research/github-repositories.md)：实际文件、许可证、版本差异与规则缺陷，以及可参考范围。
 - [领域规则与二十四山对照](docs/research/domain-reference.md)：角度约定、完整方位表、坐向与测量规则。
 - [验收矩阵](docs/acceptance.md)：计算边界、实机兼容性、离线与发布验收。
 - [变更提案](openspec/changes/build-field-survey-pwa/proposal.md)：首版产品范围与后续方向。
