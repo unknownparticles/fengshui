@@ -439,6 +439,17 @@ function ProjectDetail({ project: p }: { project: Project }) {
                         </dd>
                         <dt>时区</dt>
                         <dd>{m.timezone}</dd>
+                        {m.calibration && (
+                          <>
+                            <dt>校准依据</dt>
+                            <dd>
+                              {m.calibration.source} · 参考{" "}
+                              {m.calibration.referenceAngle}° · 原始锚点{" "}
+                              {m.calibration.rawAnchor}° · 偏移{" "}
+                              {m.calibration.offset}°
+                            </dd>
+                          </>
+                        )}
                         <dt>质量</dt>
                         <dd>{m.quality.status}</dd>
                         <dt>规则</dt>

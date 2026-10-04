@@ -157,6 +157,26 @@ export function validateSnapshot(p: ProjectSnapshot) {
     ),
   );
   p.measurements.forEach((m) => {
+    if (m.calibration) {
+      const c = m.calibration;
+      demand(
+        idOK(c.id) &&
+          finite(c.rawAnchor, 0, 359.99999999999994) &&
+          finite(c.referenceAngle, 0, 359.99999999999994) &&
+          finite(c.offset, 0, 359.99999999999994) &&
+          c.north === m.rawNorth &&
+          typeof c.source === "string" &&
+          c.source.trim() &&
+          typeof c.adapter === "string" &&
+          Number.isFinite(Date.parse(c.createdAt)),
+        "人工校准参数不合法",
+      );
+      demand(
+        Math.abs(((c.referenceAngle - c.rawAnchor + 360) % 360) - c.offset) <
+          1e-8,
+        "校准偏移与参考角度不一致",
+      );
+    }
     demand(
       points.has(m.pointId) &&
         OBJECTS.includes(m.object) &&
@@ -211,6 +231,21 @@ export function validateSnapshot(p: ProjectSnapshot) {
         "原始采样字段不合法",
       ),
     );
+    if (m.calibration)
+      m.samples.forEach((sample) => {
+        const device = sample as typeof sample & {
+          deviceAngle: number;
+          adapter: string;
+        };
+        const c = m.calibration!;
+        demand(
+          finite(device.deviceAngle, 0, 359.99999999999994) &&
+            device.adapter === c.adapter &&
+            Math.abs(((device.deviceAngle + c.offset) % 360) - sample.angle) <
+              1e-8,
+          "校准样本与原始设备角度不一致",
+        );
+      });
   });
   p.adoptions.forEach((a) => {
     demand(

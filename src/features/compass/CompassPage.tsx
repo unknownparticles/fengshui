@@ -36,7 +36,11 @@ export function CompassPage() {
   const [locked, setLocked] = useState<Measurement | null>(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-  useActivity("compass-draft", !!text.trim() && !saved);
+  const [device, setDevice] = useState<{
+    angle: number;
+    north: KnownNorth;
+  } | null>(null);
+  useActivity("compass-draft", (!!text.trim() || !!locked) && !saved);
   let current: number | null = null;
   let invalid = "";
   if (text.trim()) {
@@ -46,7 +50,7 @@ export function CompassPage() {
       invalid = (e as Error).message;
     }
   }
-  const value = locked?.angle ?? current;
+  const value = locked?.angle ?? device?.angle ?? current;
   const facing =
     value == null
       ? null
@@ -177,8 +181,8 @@ export function CompassPage() {
           <div className="card-header">
             <span className="pill">地盘正针</span>
             <span className="muted">
-              {NORTH_LABEL[locked?.north ?? north]} ·{" "}
-              {locked ? "已锁定" : "手工测量"}
+              {NORTH_LABEL[locked?.north ?? device?.north ?? north]} ·{" "}
+              {locked ? "已锁定" : device ? "人工校准测量" : "手工测量"}
             </span>
           </div>
           <div className="reading-summary">
@@ -214,7 +218,9 @@ export function CompassPage() {
           <section className="card">
             <div className="section-title">
               <h2>记录方向</h2>
-              <span className="tiny-label">实体罗盘手录</span>
+              <span className="tiny-label">
+                {locked?.calibration ? "人工参考校准" : "实体罗盘手录"}
+              </span>
             </div>
             <div className="segmented">
               <button
@@ -245,6 +251,7 @@ export function CompassPage() {
                 disabled={!!locked}
                 value={text}
                 onChange={(e) => {
+                  setDevice(null);
                   setText(e.target.value);
                   setError("");
                 }}
@@ -375,6 +382,7 @@ export function CompassPage() {
                   </button>
                   <button
                     onClick={() => {
+                      setDevice(null);
                       setLocked(null);
                       setSaved(false);
                       setText("");
@@ -406,7 +414,21 @@ export function CompassPage() {
               </dl>
             </details>
           </section>
-          <DevicePanel />
+          <DevicePanel
+            point={point}
+            kind={kind}
+            locked={!!locked}
+            onPreview={(angle, north) => {
+              if (!locked)
+                setDevice(angle != null && north ? { angle, north } : null);
+            }}
+            onLock={(reading) => {
+              setLocked(reading);
+              setSaved(false);
+              setError("");
+              setDevice(null);
+            }}
+          />
           <section className="card field-note">
             <span className="tiny-label">现场提示</span>
             <h3>先明确对象，再确定坐向</h3>

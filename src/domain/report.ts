@@ -90,7 +90,7 @@ export function reportHTML(
   const measurements = p.measurements
     .map(
       (m) =>
-        `<tr><td>${e(p.points.find((pt) => pt.id === m.pointId)?.name)}</td><td>${e(m.object)}<br/>${e(m.kind === "facing" ? "测向" : "测坐")}</td><td>${m.rawAngle}° ${e(NORTH_LABEL[m.rawNorth])}<br/>${e(m.source)}</td><td>${m.angle}° ${e(NORTH_LABEL[m.north])}<br/>向${e(mountain(facingAngle(m)).name)}</td><td>${e(m.quality.status)}<br/>样本 ${m.quality.count}，离散度 ${m.quality.spread ?? "未知"}°<br/>精度 ${m.quality.accuracy ?? "未知"}</td><td>${e(m.createdAt)}<br/>${e(m.timezone)}<br/>${e(m.ruleVersion)}${m.correction ? `<br/>人工磁偏角 ${m.correction.degrees}°，${e(m.correction.source)}，${e(m.correction.date)}，${e(privacy.location ? m.correction.place : "地点已省略")}` : ""}</td></tr>`,
+        `<tr><td>${e(p.points.find((pt) => pt.id === m.pointId)?.name)}</td><td>${e(m.object)}<br/>${e(m.kind === "facing" ? "测向" : "测坐")}</td><td>${m.rawAngle}° ${e(NORTH_LABEL[m.rawNorth])}<br/>${e(m.source)}${m.calibration ? `<br/>人工参考校准：${e(m.calibration.source)}；参考角 ${m.calibration.referenceAngle}°；原始锚点 ${m.calibration.rawAnchor}°；偏移 ${m.calibration.offset}°；${e(m.calibration.createdAt)}` : ""}</td><td>${m.angle}° ${e(NORTH_LABEL[m.north])}<br/>向${e(mountain(facingAngle(m)).name)}</td><td>${e(m.quality.status)}<br/>样本 ${m.quality.count}，离散度 ${m.quality.spread ?? "未知"}°<br/>精度 ${m.quality.accuracy ?? "未知"}</td><td>${e(m.createdAt)}<br/>${e(m.timezone)}<br/>${e(m.ruleVersion)}${m.correction ? `<br/>人工磁偏角 ${m.correction.degrees}°，${e(m.correction.source)}，${e(m.correction.date)}，${e(privacy.location ? m.correction.place : "地点已省略")}` : ""}</td></tr>`,
     )
     .join("");
   const observations = p.observations

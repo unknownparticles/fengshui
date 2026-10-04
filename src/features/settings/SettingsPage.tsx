@@ -333,7 +333,9 @@ export function SettingsPage({
             应用 {__APP_VERSION__} · 构建 {__BUILD_REVISION__} · 地盘正针
             earth-plate-v1
           </p>
-          <p>手机北向适配尚未完成实机对照，正式测量采用实体罗盘手录。</p>
+          <p>
+            设备北向尚未自动验证；可用实体罗盘手录，或对准已知方向人工校准后连续测量。
+          </p>
           <a
             href="https://github.com/unknownparticles/fengshui"
             target="_blank"

@@ -1,3 +1,4 @@
+import type { Calibration } from "../adapters/orientation";
 import type { SourceRecord } from "../data/knowledge";
 import {
   circularMean,
@@ -42,6 +43,7 @@ export interface Point {
   updatedAt: string;
 }
 export interface Measurement {
+  calibration?: Calibration;
   id: string;
   pointId: string;
   object: ObjectKind;
