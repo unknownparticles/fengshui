@@ -4,6 +4,23 @@ context: |
   Language: zh
   All artifacts must be written in zh.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  项目：专业罗盘与现场堪舆 PWA，托管于 GitHub Pages。
+  首版：地盘正针二十四山、后天八卦、坐向、多测点记录、平面图方位叠加、资料库与本地报告。
+  纯静态前端；核心流程离线可用；无后端、登录、云端上传或客户端密钥。
+  手机传感器读数须记录来源与北向基准；未知基准不得伪装成磁北或真北。
+  流派规则须注明来源与版本；传统解释与现场测量分开呈现。
+  所有提交信息必须为纯中文；一次逻辑修改前后保持 Git 工作区干净。
+
+rules:
+  proposal:
+    - 明确首版范围与后续流派排盘边界。
+  specs:
+    - 每个需求使用 SHALL 或 MUST，包含可验证的 WHEN/THEN 场景。
+    - 覆盖权限拒绝、无传感器、离线、保存失败与北向基准未知等降级行为。
+  design:
+    - 说明角度约定、数据版本和 GitHub Pages 子路径适配。
+  tasks:
+    - 按依赖顺序列出任务，每项包含验证方式，未实现任务保持未勾选。
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
