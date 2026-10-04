@@ -9,11 +9,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run src",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test:e2e": "playwright test",
-    "check:spec": "OPENSPEC_TELEMETRY=0 openspec validate --all --strict --no-interactive"
+    "check:spec": "OPENSPEC_TELEMETRY=0 openspec validate --all --strict --no-interactive",
+    "format": "prettier --write src tests *.ts *.json"
   },
   "dependencies": {
     "fflate": "0.8.3",

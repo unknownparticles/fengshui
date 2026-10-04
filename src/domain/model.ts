@@ -1,3 +1,4 @@
+import type { SourceRecord } from "../data/knowledge";
 import {
   circularMean,
   coveringArc,
@@ -143,6 +144,7 @@ export interface Project {
 }
 export type ProjectSnapshot = Omit<Project, "reports">;
 export interface Report {
+  sources: SourceRecord[];
   id: string;
   createdAt: string;
   timezone: string;
@@ -202,7 +204,7 @@ export function newProject(name: string): Project {
   };
 }
 export function recommend(measurements: Measurement[]) {
-  if (measurements.length < 3)
+  if (new Set(measurements.map((m) => m.id)).size < 3)
     return {
       angle: null,
       span: null,
@@ -238,7 +240,7 @@ export function adopt(
 ): Adoption {
   if (!basis.trim()) throw new Error("请填写建筑取向依据");
   if (
-    selected.length < 3 ||
+    new Set(selected.map((m) => m.id)).size < 3 ||
     new Set(selected.map((m) => `${m.pointId}:${m.object}:${m.north}`)).size !==
       1
   )

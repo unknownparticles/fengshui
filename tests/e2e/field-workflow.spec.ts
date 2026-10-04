@@ -4,6 +4,7 @@ test("手录三次、确认坐向、草稿保存及深层刷新", async ({ page 
   await page.goto("#/projects");
   await page.getByLabel("项目名称", { exact: true }).fill("测试住宅");
   await page.getByRole("button", { name: "建立项目", exact: true }).click();
+  await expect(page).toHaveURL(/#\/projects\/[a-f0-9-]+$/);
   await expect(
     page.getByRole("heading", { name: "测试住宅", exact: true }),
   ).toBeVisible();
@@ -66,6 +67,7 @@ test("移动布局、跨零边界、主题保留锁定值、资料深层链接",
   await page.goto("#/projects");
   await page.getByLabel("项目名称", { exact: true }).fill("界面验证项目");
   await page.getByRole("button", { name: "建立项目", exact: true }).click();
+  await expect(page).toHaveURL(/#\/projects\/[a-f0-9-]+$/);
   await page.getByRole("link", { name: "继续测量", exact: true }).click();
   await page.getByLabel("方位角（度）", { exact: true }).fill("7.49");
   await expect(page.locator(".sitting-facing")).toHaveText("坐午 · 向子");

@@ -1,3 +1,6 @@
+import { PlanEditor } from "../plans/PlanEditor";
+import { ReportsPanel } from "../reports/ReportsPanel";
+import { prepareImage, imageDataURL } from "../../domain/images";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "../../App";
 import { Icon } from "../../components/Icon";
@@ -411,6 +414,7 @@ function ProjectDetail({ project: p }: { project: Project }) {
                   key={o.id}
                   observation={o}
                   archived={!!p.archivedAt}
+                  project={p}
                   save={(next) =>
                     edit((project) => {
                       project.observations = project.observations.map((v) =>
@@ -580,6 +584,13 @@ function ProjectDetail({ project: p }: { project: Project }) {
           </section>
         </div>
       </div>
+      <div className="project-extras">
+        <PlanEditor
+          key={`${p.id}:${p.attachments.filter((a) => a.kind === "plan").length}`}
+          project={p}
+        />
+        <ReportsPanel project={p} />
+      </div>
     </>
   );
 }
@@ -587,10 +598,12 @@ function ObservationEditor({
   observation: o,
   save,
   archived,
+  project,
 }: {
   observation: Observation;
   save: (next: Observation) => Promise<void>;
   archived: boolean;
+  project: Project;
 }) {
   const [draft, setDraft] = useState(o);
   const first = useRef(true);
@@ -619,9 +632,25 @@ function ObservationEditor({
       void saver
         .current({ ...latest.current, updatedAt: nowISO() })
         .catch(() => {});
-    }, 350);
+    }, 0);
     return () => clearTimeout(timeout);
   }, [draft]);
+  const app = useApp();
+  async function uploadPhoto(file: File) {
+    try {
+      const image = await prepareImage(file, "photo");
+      await app.mutate((data) => {
+        const p = data.projects.find((p) => p.id === project.id)!;
+        p.attachments.push(image);
+      });
+      setDraft((d) => ({
+        ...d,
+        attachmentIds: [...d.attachmentIds, image.id],
+      }));
+    } catch (e) {
+      app.announce((e as Error).message);
+    }
+  }
   return (
     <fieldset disabled={archived} className="observation-editor">
       <legend>观察记录</legend>
@@ -656,6 +685,61 @@ function ObservationEditor({
           }
         />
       </label>
+      <label>
+        观察方位（度，可选）
+        <input
+          type="number"
+          min="0"
+          max="360"
+          step="any"
+          value={draft.direction ?? ""}
+          onChange={(e) => {
+            try {
+              setDraft((d) => ({
+                ...d,
+                direction: e.target.value.trim()
+                  ? parseAngle(e.target.value)
+                  : undefined,
+                north: "magnetic",
+              }));
+            } catch (error) {
+              app.announce((error as Error).message);
+            }
+          }}
+        />
+      </label>
+      <label>
+        观察参考北
+        <select
+          value={draft.north || "magnetic"}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, north: e.target.value as KnownNorth }))
+          }
+        >
+          <option value="magnetic">磁北</option>
+          <option value="true">真北</option>
+        </select>
+      </label>
+      <label>
+        添加现场照片
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void uploadPhoto(file);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      <div className="photo-strip">
+        {draft.attachmentIds.map((id) => {
+          const image = project.attachments.find((a) => a.id === id);
+          return image ? (
+            <img key={id} src={imageDataURL(image)} alt="本地现场照片" />
+          ) : null;
+        })}
+      </div>
       <label>
         关联资料（可选）
         <select
