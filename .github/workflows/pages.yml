@@ -1,6 +1,11 @@
 name: 正式发布页面
 on:
   workflow_dispatch:
+    inputs:
+      allow_pending_manual_checks:
+        description: '发布已通过自动验证的手录版本，保留手机实机验收待完成状态'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -18,6 +23,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check:release
+        if: ${{ !inputs.allow_pending_manual_checks }}
+      - name: 记录手录版本发布范围
+        if: ${{ inputs.allow_pending_manual_checks }}
+        run: echo '按用户授权发布已验证的手录版本；手机传感器正式锁定保持未启用，实机记录保持待完成。'
       - run: npm run check:spec
       - run: npm test
       - run: npm run build

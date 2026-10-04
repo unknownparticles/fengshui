@@ -9,10 +9,10 @@
 - GitHub 仓库：[unknownparticles/fengshui](https://github.com/unknownparticles/fengshui)。
 - Git remote：`https://github.com/unknownparticles/fengshui.git`，本地别名 `origin`。
 - 本地初始分支：`main`。2026-10-04 已推送实现代码并核实远端默认分支为 main。
-- GitHub Pages 计划地址：[unknownparticles.github.io/fengshui/](https://unknownparticles.github.io/fengshui/)，尚未部署。
+- GitHub Pages 地址：[alunapp.cn/fengshui/](https://alunapp.cn/fengshui/)；[GitHub 默认地址](https://unknownparticles.github.io/fengshui/) 重定向至账号自定义域名。
 - 项目部署基路径：`/fengshui/`；manifest 入口与 SW scope 同步采用该路径。
 
-首次发布前还需核实远端默认分支、配置 Pages Source 为 GitHub Actions，并完成实机验收。PR／main 推送仅校验，正式发布为手动流程且检查实机记录；仓库地址已确定不代表 Pages 已启用。
+PR／main 推送仅校验，发布通过手动 Actions 工作流构建并上传 `dist`。用户已授权发布当前自动验证通过的手录版本；手机实机记录保持待完成，正式传感器定向保持未启用。
 
 ## 阅读入口
 

@@ -1,6 +1,6 @@
 # 开发、发布与恢复
 
-仓库：[unknownparticles/fengshui](https://github.com/unknownparticles/fengshui)。目标 Pages 地址：[unknownparticles.github.io/fengshui/](https://unknownparticles.github.io/fengshui/)。当前应用处于实施与验收阶段，正式发布前仍需完成实机记录。
+仓库：[unknownparticles/fengshui](https://github.com/unknownparticles/fengshui)。项目 Pages 使用账号域名，实际地址为 [alunapp.cn/fengshui/](https://alunapp.cn/fengshui/)，GitHub 默认地址重定向至该域名。手机实机记录仍保留待完成状态。
 
 ## 本地开发与验证
 
@@ -28,6 +28,10 @@ npm run test:root
 4. 在 GitHub Settings → Pages 将 Source 设为 GitHub Actions，检查 HTTPS。
 5. 手动运行“正式发布页面”。构建任务先检查实机记录、规格、单元测试、生产构建和两套浏览器测试，只上传 dist；部署任务依赖成功构建。PR 和普通推送只运行验证，不自动正式发布。
 6. 检查实际目标地址、manifest、图标、SW scope、资料深层刷新和安装入口；记录发布提交。应用设置页显示构建提交。
+
+2026-10-04 用户明确要求发布当前版本。工作流提供 `allow_pending_manual_checks` 手动选项，可发布已通过自动验证的手录版本：跳过实机发布门槛，但不修改实机记录，也不启用未验证的传感器正式锁定。其他规格、单元、构建与浏览器检查保持必需。后续取得实机证据再完成完整验收。
+
+Pages 必须采用 GitHub Actions 工作流发布 `dist`，不能用默认 Jekyll 流程发布仓库根目录。站点启用 HTTPS，保证设备接口与离线缓存所需安全上下文。
 
 ## 备份与数据迁移
 
