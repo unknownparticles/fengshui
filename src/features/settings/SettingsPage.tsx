@@ -329,7 +329,10 @@ export function SettingsPage({
         </section>
         <section className="card">
           <h2>当前版本</h2>
-          <p>应用 {__APP_VERSION__} · 地盘正针 earth-plate-v1</p>
+          <p>
+            应用 {__APP_VERSION__} · 构建 {__BUILD_REVISION__} · 地盘正针
+            earth-plate-v1
+          </p>
           <p>手机北向适配尚未完成实机对照，正式测量采用实体罗盘手录。</p>
           <a
             href="https://github.com/unknownparticles/fengshui"

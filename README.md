@@ -12,7 +12,7 @@
 - GitHub Pages 计划地址：[unknownparticles.github.io/fengshui/](https://unknownparticles.github.io/fengshui/)，尚未部署。
 - 项目部署基路径：`/fengshui/`；manifest 入口与 SW scope 同步采用该路径。
 
-首次发布前还需推送项目、核实远端默认分支、配置 Pages Source 为 GitHub Actions，并完成构建和实机验收。仓库地址已确定不代表 Pages 已启用。
+首次发布前还需核实远端默认分支、配置 Pages Source 为 GitHub Actions，并完成实机验收。PR／main 推送仅校验，正式发布为手动流程且检查实机记录；仓库地址已确定不代表 Pages 已启用。
 
 ## 阅读入口
 
@@ -20,6 +20,8 @@
 - [用户提供的 GitHub 仓库核查](docs/research/github-repositories.md)：实际文件、许可证、版本差异与规则缺陷，以及可参考范围。
 - [UI 参考核查](docs/research/ui-references.md)与[UI 设计约定](docs/design/ui-guidelines.md)：参考项目边界、瓷白／墨黑主题、页面层级、状态和访问性。
 - [领域规则与二十四山对照](docs/research/domain-reference.md)：角度约定、完整方位表、坐向与测量规则。
+- [开发与发布说明](docs/deployment.md)：本地验证、发布门槛、备份恢复和回滚。
+- [实施验证记录](docs/verification/implementation.md)：已执行检查与待实机项目。
 - [验收矩阵](docs/acceptance.md)：计算边界、实机兼容性、离线与发布验收。
 - [变更提案](openspec/changes/build-field-survey-pwa/proposal.md)：首版产品范围与后续方向。
 - [技术设计](openspec/changes/build-field-survey-pwa/design.md)：架构、存储、传感器适配和部署方案。
@@ -50,6 +52,9 @@ npm ci
 npm run dev
 npm test
 npm run build
+npm run check:paths
+npm run test:e2e
+npm run test:root
 ```
 
 默认访问 `/fengshui/`，需要根路径构建时使用 `DEPLOY_BASE_PATH=/ npm run build`。

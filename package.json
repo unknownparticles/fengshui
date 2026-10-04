@@ -14,7 +14,10 @@
     "preview": "vite preview --host 127.0.0.1",
     "test:e2e": "playwright test",
     "check:spec": "OPENSPEC_TELEMETRY=0 openspec validate --all --strict --no-interactive",
-    "format": "prettier --write src tests *.ts *.json"
+    "format": "prettier --write src tests *.ts *.json",
+    "check:paths": "node scripts/check-paths.mjs",
+    "test:root": "playwright test --config playwright.root.config.ts",
+    "check:release": "node scripts/check-release.mjs"
   },
   "dependencies": {
     "fflate": "0.8.3",

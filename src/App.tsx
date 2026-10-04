@@ -226,7 +226,9 @@ export default function App() {
             )}
           </main>
           <footer className="page-footer">
-            <span>堪舆手记 · {__APP_VERSION__}</span>
+            <span>
+              堪舆手记 · {__APP_VERSION__} · {__BUILD_REVISION__}
+            </span>
             <span>现场资料保存在本机</span>
           </footer>
         </div>

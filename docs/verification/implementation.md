@@ -34,3 +34,10 @@
 - 两页签更新测试通过：另一页未保存测量阻止更新，保存后才刷新，两页记录仍保留。测试通过临时替换 dist/sw.js 实现真实更新请求，结束时还原产物。
 - 当前所有传感器适配器保持北向未知，不启用正式手机锁定；iPhone／Android 实机对照任务 4.4 未完成。
 - 新增项目级 OpenSpec 1.13.1 校验器。npm audit --omit=dev 无已知漏洞；完整审计有 4 个高风险条目，均来自校验器的 fast-glob → micromatch → braces 依赖链。注册表 braces 最新仍为 3.0.3，尚无兼容补丁；未采用破坏性强制降级。该工具只用于开发／CI 规格校验，不打包进浏览器运行代码。
+
+## 部署路径与持续集成
+
+- /fengshui/ 和 / 构建均验证 manifest id／scope／start_url、核心资源路径和 SW。根路径 Chromium 离线资料冷启动与深层刷新通过。
+- GitHub Actions checkout、setup-node、configure-pages、upload-pages-artifact、deploy-pages 已读取官方标签对应提交并固定。PR／main 推送只校验，正式发布手动触发并检查实机记录，部署只上传 dist。
+- npm run check:release 在未填写实机记录时按预期失败，发布任务不能继续；不是应用构建故障。
+- 未完成项保留：古籍扫描审核、iPhone／Android 实机测向与安装／打印验收、未来数据库迁移及正式发布。

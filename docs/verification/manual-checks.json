@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "releaseReady": false,
+  "iphone": { "status": "pending", "device": "", "system": "", "browser": "", "date": "", "evidence": "" },
+  "android": { "status": "pending", "device": "", "system": "", "browser": "", "date": "", "evidence": "" },
+  "sensorAdapters": [],
+  "classicalTexts": { "status": "pending", "note": "古籍扫描原文待核对，当前未内置原文" }
+}
