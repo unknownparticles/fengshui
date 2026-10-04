@@ -12,7 +12,7 @@
 - GitHub Pages 地址：[alunapp.cn/fengshui/](https://alunapp.cn/fengshui/)；[GitHub 默认地址](https://unknownparticles.github.io/fengshui/) 重定向至账号自定义域名。
 - 项目部署基路径：`/fengshui/`；manifest 入口与 SW scope 同步采用该路径。
 
-PR／main 推送仅校验，发布通过手动 Actions 工作流构建并上传 `dist`。用户已授权发布当前自动验证通过的手录版本；手机实机记录保持待完成，正式传感器定向保持未启用。
+PR／main 推送仅校验，发布通过手动 Actions 工作流构建并上传 `dist`。用户已授权发布当前自动验证通过的手录版本；手机实机记录保持待完成，设备北向不自动认证，用户可按明确来源进行现场人工参考校准。
 
 ## 阅读入口
 
