@@ -40,4 +40,4 @@
 
 当前已实现静态前端、方向计算、传感器能力检测、规则资料、IndexedDB、Service Worker、图纸、备份及报告快照，并建立验证与手动发布工作流。正式传感器适配及发布验收仍待实机记录。
 
-实际仓库为 `https://github.com/unknownparticles/fengshui.git`，本地 remote 为 `origin`；计划部署地址为 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。2026-10-04 已推送并核实远端默认分支为 `main`，首次 GitHub CI 完整通过。Pages 尚未部署。技术依据与内容边界见 [资料索引](../../../docs/research/sources.md)。
+实际仓库为 `https://github.com/unknownparticles/fengshui.git`，本地 remote 为 `origin`；计划部署地址为 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。2026-10-04 已推送并核实远端默认分支为 `main`，首次 GitHub CI 完整通过。当前手录版本已按用户明确授权发布到 `https://alunapp.cn/fengshui/`，HTTPS 已开启；手机实机与线上离线检查仍待完成。技术依据与内容边界见 [资料索引](../../../docs/research/sources.md)。

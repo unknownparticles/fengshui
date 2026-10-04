@@ -2,7 +2,7 @@
 
 面向专业罗盘与现场堪舆的浏览器应用规划：二十四山地盘正针、坐向测量、多测点记录、平面图方位叠加、资料查阅和本地报告，支持 PWA 离线使用，目标托管平台为 GitHub Pages。
 
-当前已实现手工罗盘、项目测点、复测坐向、观察与图纸、完整备份、报告快照和 PWA 离线／更新。传感器仅检测能力，正式手机北向和发布仍待实机验收。
+当前已实现手工罗盘、项目测点、复测坐向、观察与图纸、完整备份、报告快照和 PWA 离线／更新。当前手录版本已发布；传感器仅检测能力，正式手机北向与安装／离线仍待实机验收。
 
 ## 仓库与部署目标
 
@@ -21,6 +21,7 @@ PR／main 推送仅校验，发布通过手动 Actions 工作流构建并上传 
 - [UI 参考核查](docs/research/ui-references.md)与[UI 设计约定](docs/design/ui-guidelines.md)：参考项目边界、瓷白／墨黑主题、页面层级、状态和访问性。
 - [领域规则与二十四山对照](docs/research/domain-reference.md)：角度约定、完整方位表、坐向与测量规则。
 - [开发与发布说明](docs/deployment.md)：本地验证、发布门槛、备份恢复和回滚。
+- [发布记录](docs/verification/releases.md)：实际地址、发布提交和线上验证边界。
 - [实施验证记录](docs/verification/implementation.md)：已执行检查与待实机项目。
 - [验收矩阵](docs/acceptance.md)：计算边界、实机兼容性、离线与发布验收。
 - [变更提案](openspec/changes/build-field-survey-pwa/proposal.md)：首版产品范围与后续方向。

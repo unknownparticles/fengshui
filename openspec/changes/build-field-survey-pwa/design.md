@@ -2,7 +2,7 @@
 
 ## Context
 
-仓库从空目录初始化，已按本设计实现主要现场手录闭环、图纸、备份报告与 PWA。Git 远端为 `https://github.com/unknownparticles/fengshui.git`（origin），main 已推送并核实为远端默认分支；GitHub CI 验证通过，正式站点待实机验收。用户选择专业罗盘与现场堪舆，产品范围见 [proposal.md](proposal.md)，领域约定见 [domain-reference.md](../../../docs/research/domain-reference.md)，技术依据见 [sources.md](../../../docs/research/sources.md)。
+仓库从空目录初始化，已按本设计实现主要现场手录闭环、图纸、备份报告与 PWA。Git 远端为 `https://github.com/unknownparticles/fengshui.git`（origin），main 已推送并核实为远端默认分支；GitHub CI 验证通过，当前手录版本已按用户授权发布；实机验收仍待完成。用户选择专业罗盘与现场堪舆，产品范围见 [proposal.md](proposal.md)，领域约定见 [domain-reference.md](../../../docs/research/domain-reference.md)，技术依据见 [sources.md](../../../docs/research/sources.md)。
 
 GitHub Pages 不提供后端；项目站点默认有仓库子路径。移动浏览器存在传感器、安装、存储和打印差异，现场可能完全离线。不能用安装成功、角度小数位或读数稳定性替代精度验证。
 
@@ -116,7 +116,7 @@ SW 文件、scope、manifest URL、start_url 和 id 都使用统一 `DEPLOY_BASE
 
 CI 对 PR 运行 OpenSpec 严格校验、类型检查、关键算法／备份／迁移测试、生产构建及子路径静态冒烟；正式部署仅在配置的默认分支或人工 dispatch 上执行，通过 `configure-pages → upload-pages-artifact → deploy-pages` 发布 `dist`，部署任务依赖验证／构建，权限限定为 `contents: read`、`pages: write`、`id-token: write`，environment=`github-pages`。实际默认分支来自仓库配置，不硬编码假定当前为 main。
 
-部署说明涵盖 Pages Source=GitHub Actions、HTTPS、目标 base、安装和离线准备检查。目标仓库为 `unknownparticles/fengshui`，计划 Pages 地址为 `https://unknownparticles.github.io/fengshui/`，构建 `DEPLOY_BASE_PATH=/fengshui/`；manifest 和 SW 使用相同前缀。该地址是发布目标，当前尚未启用／验证 Pages。根路径部署仍保留独立构建验收，以支持将来迁移域名。
+部署说明涵盖 Pages Source=GitHub Actions、HTTPS、目标 base、安装和离线准备检查。目标仓库为 `unknownparticles/fengshui`，计划 Pages 地址为 `https://unknownparticles.github.io/fengshui/`，构建 `DEPLOY_BASE_PATH=/fengshui/`；manifest 和 SW 使用相同前缀。账号域名使其跳转到 `https://alunapp.cn/fengshui/`；当前手录版已发布并验证 HTTPS、资源和在线页面，手机实机与线上离线状态仍待验证。根路径部署仍保留独立构建验收，以支持将来迁移域名。
 
 回滚重新发布前一已验证产物，旧应用仍保留对新数据的只读与原始备份出口；数据迁移不自动反向执行。发布版本、提交和规则版本均写入关于页。发布 gate 分离“自动验证通过”与“实机北向适配可启用”，未验证设备保持手录降级。
 
