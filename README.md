@@ -8,7 +8,7 @@
 
 - GitHub 仓库：[unknownparticles/fengshui](https://github.com/unknownparticles/fengshui)。
 - Git remote：`https://github.com/unknownparticles/fengshui.git`，本地别名 `origin`。
-- 本地初始分支：`main`。2026-10-04 核查远端可访问，尚无分支或提交；远端默认分支待首次推送后核实。
+- 本地初始分支：`main`。2026-10-04 已推送实现代码并核实远端默认分支为 main。
 - GitHub Pages 计划地址：[unknownparticles.github.io/fengshui/](https://unknownparticles.github.io/fengshui/)，尚未部署。
 - 项目部署基路径：`/fengshui/`；manifest 入口与 SW scope 同步采用该路径。
 
@@ -58,3 +58,5 @@ npm run test:root
 ```
 
 默认访问 `/fengshui/`，需要根路径构建时使用 `DEPLOY_BASE_PATH=/ npm run build`。
+
+目前已完成 33／39 项实施任务。GitHub 首次完整[校验通过](https://github.com/unknownparticles/fengshui/actions/runs/37193101394)，待办见任务清单；当前变更保持活动状态，尚未归档。

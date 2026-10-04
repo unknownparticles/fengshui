@@ -2,7 +2,7 @@
 
 本清单跟踪应用实施进度；只有完成并验证的任务才勾选，实机和发布任务须有相应证据。每次逻辑修改按根目录 AGENTS.md 执行中文提交，保存已通过的验证结果。
 
-部署参数已明确：仓库 `unknownparticles/fengshui`，origin 使用 HTTPS Git 地址，本地初始分支 main，Pages 目标 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。远端当前为空；默认分支和站点配置待首次推送／发布时核实。
+部署参数已明确：仓库 `unknownparticles/fengshui`，origin 使用 HTTPS Git 地址，本地初始分支 main，Pages 目标 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。已推送 main 并核实为远端默认分支；Pages 正式站点配置仍待实机验收后执行。
 
 ## 1. 应用基础与资料审核
 
@@ -62,7 +62,7 @@
 ## 8. GitHub Pages 与发布验收
 
 - [x] 8.1 建立统一部署基路径配置和路径命名空间；验证 `/fengshui/` 与 `/` 两种构建的资源、路由、安装与 SW 范围正确。
-- [ ] 8.2 建立 PR 验证及依赖验证的 Pages 部署工作流，核对并锁定官方 Actions 版本；验证失败阻止发布、PR 无部署权限、仅上传 dist。
+- [x] 8.2 建立 PR 验证及依赖验证的 Pages 部署工作流，核对并锁定官方 Actions 版本；验证失败阻止发布、PR 无部署权限、仅上传 dist。
 - [ ] 8.3 向已关联的 unknownparticles/fengshui 仓库推送项目，核实 main 默认分支，配置 Pages Source 与 HTTPS，并写发布／备份／回滚说明；验证目标站点访问、深层刷新和安装离线启动。
 - [ ] 8.4 完成实机矩阵、数据恢复、更新回滚与关键网络请求检查；交付版本／提交／规则版本和验收记录，未验证能力保留降级。
 - [ ] 8.5 所有实现任务通过后归档当前变更；验证正式 openspec/specs 完整、严格校验通过、中文提交完成且工作区干净。

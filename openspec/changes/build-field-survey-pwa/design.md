@@ -2,7 +2,7 @@
 
 ## Context
 
-仓库从空目录初始化，当前仅有资料与 OpenSpec，尚无业务代码。Git 远端已关联 `https://github.com/unknownparticles/fengshui.git`（origin）；2026-10-04 读取远端 refs 为空，本地初始分支为 main，远端默认分支待首次推送后核实。用户选择专业罗盘与现场堪舆，产品范围见 [proposal.md](proposal.md)，领域约定见 [domain-reference.md](../../../docs/research/domain-reference.md)，技术依据见 [sources.md](../../../docs/research/sources.md)。
+仓库从空目录初始化，已按本设计实现主要现场手录闭环、图纸、备份报告与 PWA。Git 远端为 `https://github.com/unknownparticles/fengshui.git`（origin），main 已推送并核实为远端默认分支；GitHub CI 验证通过，正式站点待实机验收。用户选择专业罗盘与现场堪舆，产品范围见 [proposal.md](proposal.md)，领域约定见 [domain-reference.md](../../../docs/research/domain-reference.md)，技术依据见 [sources.md](../../../docs/research/sources.md)。
 
 GitHub Pages 不提供后端；项目站点默认有仓库子路径。移动浏览器存在传感器、安装、存储和打印差异，现场可能完全离线。不能用安装成功、角度小数位或读数稳定性替代精度验证。
 
@@ -25,7 +25,7 @@ GitHub Pages 不提供后端；项目站点默认有仓库子路径。移动浏�
 
 ### 1. 静态前端与模块边界
 
-采用 TypeScript、React、Vite；路由使用 Hash 方式。PWA 用 `vite-plugin-pwa` 的 `injectManifest` 与自定义 SW，数据库用 IndexedDB（通过 `idb`），ZIP 备份使用 `fflate`；具体受支持版本在实施时核对并锁定，当前不安装依赖。
+采用 TypeScript、React、Vite；路由使用 Hash 方式。PWA 用 `vite-plugin-pwa` 的 `injectManifest` 与自定义 SW，数据库用 IndexedDB（通过 `idb`），ZIP 备份使用 `fflate`；依赖版本已在实施时核对并锁定，记录于 package.json 与 package-lock.json。
 
 选用这些工具是为了静态构建、类型明确、图片叠加和本地状态维护。服务端渲染会增加 Pages 部署负担；`localStorage` 不适合图纸附件；自动立即更新会打断采样，故使用可控制的 SW 生命周期。图纸盘面以 SVG 叠加在本地重新编码的图片上，界面不引入 Three.js 或摄像头。
 
@@ -108,7 +108,7 @@ flowchart LR
 
 不在页面加载时自动 `skipWaiting`；waiting worker 通知新版本，用户同意且所有草稿写入成功后切换。多页签均有未保存修改或采样时提示关闭／保存其他页签，禁止直接刷新。清理旧缓存只匹配本应用 namespace；激活新版本时确保当前页面资源链可用，失败保留旧 worker 和缓存。
 
-SW 文件、scope、manifest URL、start_url 和 id 都使用统一 `DEPLOY_BASE_PATH`。`/fengshui/` 项目不能注册 `/sw.js` 或根 scope。地址变化／自定义域名切换视为不同安装入口，提前导出备份再迁移；不能假设浏览器自动移动 origin 数据。
+SW 文件、scope、manifest URL、start_url 和 id 都使用统一 `DEPLOY_BASE_PATH`。实现中对 Cache 中的状态码和 MIME 逐项核查，确认核心清单可读后才显示离线就绪；清理后可重新联网准备。`/fengshui/` 项目不能注册 `/sw.js` 或根 scope。地址变化／自定义域名切换视为不同安装入口，提前导出备份再迁移；不能假设浏览器自动移动 origin 数据。
 
 ### 8. 构建、发布与回滚
 

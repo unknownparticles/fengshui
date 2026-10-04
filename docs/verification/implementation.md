@@ -41,3 +41,7 @@
 - GitHub Actions checkout、setup-node、configure-pages、upload-pages-artifact、deploy-pages 已读取官方标签对应提交并固定。PR／main 推送只校验，正式发布手动触发并检查实机记录，部署只上传 dist。
 - npm run check:release 在未填写实机记录时按预期失败，发布任务不能继续；不是应用构建故障。
 - 未完成项保留：古籍扫描审核、iPhone／Android 实机测向与安装／打印验收、未来数据库迁移及正式发布。
+
+## 远端验证结果
+
+2026-10-04 已推送 main，核实为默认分支。GitHub [验证运行 37193101394](https://github.com/unknownparticles/fengshui/actions/runs/37193101394) 成功：规格、41 项单元测试、生产构建、双路径检查、9 条项目路径浏览器流程及 1 条根路径浏览器流程全部通过。当前实现提交 092c501，Pages 正式发布未执行。

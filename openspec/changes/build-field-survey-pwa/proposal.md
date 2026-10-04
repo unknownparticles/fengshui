@@ -4,7 +4,7 @@
 
 专业现场堪舆需要把罗盘读数、观察对象、北向基准、环境记录和判断依据放在同一个可复核项目里，弱网场景也应能持续工作。建设可安装、可离线的静态 PWA，可直接托管在 GitHub Pages，降低部署和现场使用成本。
 
-用户已明确第一版侧重“专业罗盘与现场堪舆”。本次交付是资料与完整实施规格，应用实现按后续任务推进。
+用户已明确第一版侧重“专业罗盘与现场堪舆”。资料与实施规格已建立，应用实现按本变更任务逐步推进。
 
 ## What Changes
 
@@ -38,6 +38,6 @@
 
 ## Impact
 
-后续将新增静态前端、方向计算模块、传感器适配层、规则数据、IndexedDB 存储、Service Worker、报告界面和 GitHub Actions。当前完成资料与规格，已关联 Git 远端；应用及发布流程尚未实现。
+当前已实现静态前端、方向计算、传感器能力检测、规则资料、IndexedDB、Service Worker、图纸、备份及报告快照，并建立验证与手动发布工作流。正式传感器适配及发布验收仍待实机记录。
 
-实际仓库为 `https://github.com/unknownparticles/fengshui.git`，本地 remote 为 `origin`；计划部署地址为 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。2026-10-04 核查远端暂无分支或提交，本地采用 `main` 初始分支，首次推送后核实远端默认分支。Pages 尚未部署。技术依据与内容边界见 [资料索引](../../../docs/research/sources.md)。
+实际仓库为 `https://github.com/unknownparticles/fengshui.git`，本地 remote 为 `origin`；计划部署地址为 `https://unknownparticles.github.io/fengshui/`，基路径 `/fengshui/`。2026-10-04 已推送并核实远端默认分支为 `main`，首次 GitHub CI 完整通过。Pages 尚未部署。技术依据与内容边界见 [资料索引](../../../docs/research/sources.md)。
