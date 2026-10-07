@@ -1191,9 +1191,30 @@ summary {
 
 .sketch-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
   gap: 24px;
   margin: 24px 0;
+}
+.plan-tools {
+  margin-bottom: 12px;
+}
+.plan-tools .button-row {
+  gap: 8px;
+}
+.tool-hint {
+  margin: 12px 0 0;
+  color: var(--text);
+  font-size: 14px;
+}
+.plan-import {
+  background: var(--bg);
+  border-radius: 10px;
+}
+.plan-start-options {
+  margin-top: 16px;
+}
+.plan-tools legend {
+  font-size: 15px;
 }
 .floor-plan-canvas {
   display: block;
@@ -1272,4 +1293,23 @@ summary {
   }
 }
 
-.opening-editor>summary{font-size:14px;color:var(--text);padding:0;margin:0;min-height:44px;display:list-item}.qi-finding details{margin-top:8px;padding-top:0;border-top:0}.qi-finding details summary{font-size:14px;min-height:44px}.quick-floor-plan{scroll-margin-top:24px}
+.opening-editor > summary {
+  font-size: 14px;
+  color: var(--text);
+  padding: 0;
+  margin: 0;
+  min-height: 44px;
+  display: list-item;
+}
+.qi-finding details {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+.qi-finding details summary {
+  font-size: 14px;
+  min-height: 44px;
+}
+.quick-floor-plan {
+  scroll-margin-top: 24px;
+}

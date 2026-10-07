@@ -118,7 +118,7 @@ test("传感器拒绝权限后保留手录入口", async ({ page }) => {
   await page.goto("#/compass");
   await page.getByRole("button", { name: "启动设备检测" }).click();
   await expect(
-    page.getByText("方向权限被拒绝，手录仍可使用", { exact: true }),
+    page.getByText(/方向权限被拒绝：.*运动与方向访问.*手录仍可使用/),
   ).toBeVisible();
   await expect(page.getByLabel("方位角（度）", { exact: true })).toBeEditable();
 });

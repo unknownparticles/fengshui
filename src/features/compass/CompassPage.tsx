@@ -14,6 +14,7 @@ import {
   RULE_VERSION,
   type Declination,
   type KnownNorth,
+  type North,
 } from "../../domain/direction";
 import { nowISO, timezone, uid, type Measurement } from "../../domain/model";
 
@@ -38,7 +39,7 @@ export function CompassPage() {
   const [saved, setSaved] = useState(false);
   const [device, setDevice] = useState<{
     angle: number;
-    north: KnownNorth;
+    north: North;
     stable: boolean;
     status: string;
   } | null>(null);
@@ -53,7 +54,10 @@ export function CompassPage() {
       invalid = (e as Error).message;
     }
   }
-  const value = locked?.angle ?? device?.angle ?? current;
+  const value =
+    locked?.angle ??
+    (device?.north === "unknown" ? null : device?.angle) ??
+    current;
   const facing =
     value == null
       ? null
@@ -185,7 +189,7 @@ export function CompassPage() {
             <span className="pill">地盘正针</span>
             <span className="muted">
               {NORTH_LABEL[locked?.north ?? device?.north ?? north]} ·{" "}
-              {locked ? "已锁定" : device ? "人工校准测量" : "手工测量"}
+              {locked ? "已锁定" : device ? "设备实时读数" : "等待测量"}
             </span>
           </div>
           <div className="reading-summary">
@@ -206,7 +210,7 @@ export function CompassPage() {
             </p>
             <span className="muted">
               {facing == null
-                ? "输入实体罗盘读数"
+                ? "启动手机指南针，或输入实体罗盘读数"
                 : `${mountain(facing).palace}宫 · ${mountain(facing).direction}方`}
             </span>
           </div>
@@ -218,11 +222,40 @@ export function CompassPage() {
           </div>
         </section>
         <div className="compass-side">
+          <DevicePanel
+            lockRef={deviceLock}
+            point={point}
+            kind={kind}
+            locked={!!locked}
+            onPreview={(angle, north, stable, status) => {
+              if (!locked && !text.trim())
+                setDevice(
+                  angle != null && north
+                    ? {
+                        angle,
+                        north,
+                        stable: !!stable,
+                        status: status || "采样中",
+                      }
+                    : null,
+                );
+            }}
+            onLock={(reading) => {
+              setLocked(reading);
+              setSaved(false);
+              setError("");
+              setDevice(null);
+            }}
+          />
           <section className="card">
             <div className="section-title">
               <h2>记录方向</h2>
               <span className="tiny-label">
-                {locked?.calibration ? "人工参考校准" : "实体罗盘手录"}
+                {locked?.calibration
+                  ? "人工参考校准"
+                  : locked?.samples.length || device
+                    ? "设备指南针"
+                    : "实体罗盘手录"}
               </span>
             </div>
             <div className="segmented">
@@ -349,11 +382,19 @@ export function CompassPage() {
             <div className="quality-card">
               <Icon name={locked ? "check" : "compass"} />
               <div>
-                <strong>{locked ? "读数已锁定" : "手工输入 · 精度未知"}</strong>
+                <strong>
+                  {locked
+                    ? "读数已锁定"
+                    : device
+                      ? device.status
+                      : "手工输入 · 精度未知"}
+                </strong>
                 <p>
                   {locked
                     ? "图形和原始读数已冻结，可保存或重新测量。"
-                    : "小数位是显示分辨率，建议使用实体罗盘复测。"}
+                    : device
+                      ? "竖屏平放，稳定后锁定；设备北向建议用实体罗盘复核。"
+                      : "小数位是显示分辨率，建议使用实体罗盘复测。"}
                 </p>
               </div>
             </div>
@@ -421,31 +462,6 @@ export function CompassPage() {
               </dl>
             </details>
           </section>
-          <DevicePanel
-            lockRef={deviceLock}
-            point={point}
-            kind={kind}
-            locked={!!locked}
-            onPreview={(angle, north, stable, status) => {
-              if (!locked)
-                setDevice(
-                  angle != null && north
-                    ? {
-                        angle,
-                        north,
-                        stable: !!stable,
-                        status: status || "采样中",
-                      }
-                    : null,
-                );
-            }}
-            onLock={(reading) => {
-              setLocked(reading);
-              setSaved(false);
-              setError("");
-              setDevice(null);
-            }}
-          />
           <section className="card field-note">
             <span className="tiny-label">现场提示</span>
             <h3>先明确对象，再确定坐向</h3>

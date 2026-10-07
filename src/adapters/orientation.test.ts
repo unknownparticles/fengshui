@@ -47,7 +47,7 @@ describe("传感器能力与权限降级", () => {
     target.dispatchEvent(event);
     expect(session.state.samples).toHaveLength(0);
   });
-  it("扩展存在仍保持未知参考北，相对 alpha 不当罗盘", async () => {
+  it("相对 alpha 不当北向，原生罗盘直接提供设备报告磁北", async () => {
     const { session, target } = setup();
     await session.start();
     const relative = new Event("deviceorientation");
@@ -64,8 +64,66 @@ describe("传感器能力与权限降级", () => {
       webkitCompassAccuracy: 10,
     });
     target.dispatchEvent(heading);
-    expect(session.state.samples[0].north).toBe("unknown");
-    expect(session.state.status).toContain("未校准");
+    expect(session.state.samples[0].north).toBe("magnetic");
+    expect(session.state.status).toContain("低精度");
+    session.stop();
+  });
+  it.each(["deviceorientation", "deviceorientationabsolute"])(
+    "绝对来源 %s 直接采样并忽略相对事件",
+    async (type) => {
+      vi.useFakeTimers();
+      let time = 1000;
+      const { session, target } = setup({ now: () => time });
+      await session.start();
+      for (let i = 0; i <= 12; i++) {
+        time = 1000 + i * 250;
+        const e = new Event(type);
+        Object.assign(e, {
+          alpha: 270,
+          beta: 0,
+          gamma: 0,
+          absolute: type === "deviceorientation",
+        });
+        target.dispatchEvent(e);
+        const relative = new Event("deviceorientation");
+        Object.assign(relative, {
+          alpha: 30,
+          beta: 0,
+          gamma: 0,
+          absolute: false,
+        });
+        target.dispatchEvent(relative);
+      }
+      expect(
+        session.state.samples.every(
+          (s) => s.north === "true" && s.angle === 90,
+        ),
+      ).toBe(true);
+      expect(session.state.status).toBe("可锁定");
+      time += 2100;
+      vi.advanceTimersByTime(500);
+      expect(session.state.status).toContain("过期");
+      session.stop();
+    },
+  );
+  it("校准后的原生罗盘不会被并行的相对事件重置", async () => {
+    const { session, target } = setup();
+    await session.start();
+    const e = new Event("deviceorientation");
+    Object.assign(e, {
+      webkitCompassHeading: 90,
+      beta: 0,
+      gamma: 0,
+      absolute: true,
+    });
+    target.dispatchEvent(e);
+    session.calibrate(100, "magnetic", "实体罗盘对照");
+    const relative = new Event("deviceorientation");
+    Object.assign(relative, { alpha: 15, beta: 0, gamma: 0, absolute: false });
+    target.dispatchEvent(relative);
+    expect(session.state.calibration?.offset).toBe(10);
+    target.dispatchEvent(e);
+    expect(session.state.samples.at(-1)?.angle).toBe(100);
     session.stop();
   });
   it("权限仍在等待时停止，稍后授予也不重新采集", async () => {
@@ -110,7 +168,7 @@ describe("传感器能力与权限降级", () => {
     expect(session.state.status).toBe("可锁定");
     emit(352, 16);
     expect(session.state.calibration).toBeUndefined();
-    expect(session.state.samples.at(-1)?.north).toBe("unknown");
+    expect(session.state.samples.at(-1)?.north).toBe("magnetic");
     session.stop();
   });
   it("缺来源与过期读数不能校准", async () => {

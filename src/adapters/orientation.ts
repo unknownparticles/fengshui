@@ -70,7 +70,7 @@ export class OrientationSession {
     const adapter = webkit
       ? "webkit-compass"
       : alpha
-        ? reading.absolute
+        ? reading.absolute || event.type === "deviceorientationabsolute"
           ? "absolute-alpha"
           : "relative-alpha"
         : null;
@@ -82,18 +82,19 @@ export class OrientationSession {
     if (heading === null || adapter === null) return;
     // 固定会话来源；绝对事件与普通事件不混合成一个采样窗口。
     if (this.adapter && this.adapter !== adapter) {
+      const priority: Record<string, number> = {
+        "relative-alpha": 1,
+        "absolute-alpha": 2,
+        "webkit-compass": 3,
+      };
+      if (priority[adapter] <= priority[this.adapter]) return;
+      this.state.started = this.env.now();
       if (this.state.calibration) {
         this.state.calibration = undefined;
         this.state.samples = [];
         this.state.status = "设备来源变化，原校准已失效，请重新校准";
         this.adapter = adapter;
       } else {
-        const priority: Record<string, number> = {
-          "relative-alpha": 1,
-          "absolute-alpha": 2,
-          "webkit-compass": 3,
-        };
-        if (priority[adapter] <= priority[this.adapter]) return;
         this.state.samples = [];
       }
     }
@@ -120,7 +121,13 @@ export class OrientationSession {
       at: now,
       beta: reading.beta,
       gamma: reading.gamma,
-      north: calibration?.north || "unknown",
+      north:
+        calibration?.north ||
+        (webkit
+          ? "magnetic"
+          : adapter === "absolute-alpha"
+            ? "true"
+            : "unknown"),
       portrait,
       accuracy:
         webkit &&
@@ -140,17 +147,14 @@ export class OrientationSession {
       ...this.state.samples.filter((s) => s.at >= now - 3000),
       sample,
     ].slice(-300);
-    if (calibration)
+    if (sample.north !== "unknown")
       this.state.status = sampleQuality(
         this.state.samples,
         now,
         this.state.started,
       ).status;
     else if (pose)
-      this.state.status =
-        adapter === "relative-alpha"
-          ? "收到相对姿态。先对准已知方向校准，或手工录入"
-          : "已收到设备读数。参考北尚未校准，可校准后连续测量";
+      this.state.status = "收到相对姿态。先对准已知方向校准，或手工录入";
     else this.state.status = "请竖屏平放手机，收到稳定读数后再校准";
     this.publish();
   };
@@ -217,7 +221,8 @@ export class OrientationSession {
     try {
       if (this.env.permission && (await this.env.permission()) !== "granted") {
         if (generation !== this.generation) return;
-        this.state.status = "方向权限被拒绝，手录仍可使用";
+        this.state.status =
+          "方向权限被拒绝：请在浏览器的网站设置中允许运动与方向访问，再重试；手录仍可使用";
         this.publish();
         return;
       }
@@ -237,11 +242,12 @@ export class OrientationSession {
     this.env.target.addEventListener("deviceorientation", this.event);
     this.env.target.addEventListener("deviceorientationabsolute", this.event);
     this.timer = setTimeout(() => {
-      this.state.status = "5 秒未收到有效方向数据，请使用手录";
+      this.state.status =
+        "5 秒未收到有效方向数据：请在手机 Safari 或 Chrome 中打开，检查运动传感器权限后重试；手录仍可使用";
       this.publish();
     }, 5000);
     this.tick = setInterval(() => {
-      if (this.state.calibration && this.state.samples.length) {
+      if (this.state.samples.length) {
         this.state.status = sampleQuality(
           this.state.samples,
           this.env.now(),

@@ -26,6 +26,7 @@ test("现场已知方向校准后，稳定锁定并保留测量来源", async ({
     });
     window.dispatchEvent(e);
   });
+  await page.getByText("校准方向（相对姿态设备必需）", { exact: true }).click();
   await page.getByLabel("已知参考角度（度）").fill("359");
   await page.getByLabel("校准依据").fill("实体罗盘同方向对照");
   await page

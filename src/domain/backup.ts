@@ -125,6 +125,13 @@ export function validateSnapshot(p: ProjectSnapshot) {
       demand(idOK(plan.id) && !ids.has(plan.id), "户型修订标识不合法或重复");
       ids.add(plan.id);
       validateFloorPlan(plan);
+      if (plan.backgroundId)
+        demand(
+          p.attachments.some(
+            (a) => a.id === plan.backgroundId && a.kind === "plan",
+          ),
+          "户型底图不存在",
+        );
     }
   }
   if (p.qiAssessments !== undefined) {
@@ -146,6 +153,13 @@ export function validateSnapshot(p: ProjectSnapshot) {
         "室内评估快照不完整",
       );
       validateFloorPlan(assessment.plan);
+      if (assessment.plan.backgroundId)
+        demand(
+          p.attachments.some(
+            (a) => a.id === assessment.plan.backgroundId && a.kind === "plan",
+          ),
+          "评估底图不存在",
+        );
       for (const finding of assessment.findings) {
         demand(
           idOK(finding.id) &&
@@ -556,6 +570,7 @@ export function remapConflicts(
         const rewritePlan = (plan: FloorPlan) => {
           plan.id = map(plan.id);
           if (plan.parentId) plan.parentId = map(plan.parentId);
+          if (plan.backgroundId) plan.backgroundId = map(plan.backgroundId);
           plan.rooms.forEach((r) => {
             r.id = map(r.id);
           });

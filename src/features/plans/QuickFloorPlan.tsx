@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useApp, useActivity } from "../../App";
 import {
   makeRoom,
+  drawnRoom,
+  openingAt,
   moveRoom,
   neighboringRooms,
   planIssues,
@@ -13,6 +15,7 @@ import {
   type Room,
   type Opening,
   type Wall,
+  type PlanPoint,
 } from "../../domain/floor-plan";
 import { assessIndoor, type QiAssessment } from "../../domain/indoor-qi";
 import { nowISO, uid, type Project } from "../../domain/model";
@@ -24,8 +27,8 @@ import {
   type KnownNorth,
 } from "../../domain/direction";
 import { floorPlanPNG } from "../../domain/floor-plan-svg";
-import { prepareImage } from "../../domain/images";
-import { FloorPlanCanvas } from "./FloorPlanCanvas";
+import { prepareImage, imageDataURL } from "../../domain/images";
+import { FloorPlanCanvas, type PlanTool } from "./FloorPlanCanvas";
 export function QuickFloorPlan({ project: p }: { project: Project }) {
   const app = useApp();
   const latest = p.floorPlans?.at(-1);
@@ -33,12 +36,27 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
     latest ? structuredClone(latest) : null,
   );
   const [selected, setSelected] = useState(latest?.rooms[0]?.id || "");
-  const [width, setWidth] = useState("10");
-  const [height, setHeight] = useState("8");
+  const [width, setWidth] = useState(latest?.width.toString() || "10");
+  const [height, setHeight] = useState(latest?.height.toString() || "8");
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
   const [roomName, setRoomName] = useState("新房间");
+  const [tool, setTool] = useState<PlanTool>("select");
+  const [drawUse, setDrawUse] = useState<Room["use"]>("卧室");
+  const [selectedOpening, setSelectedOpening] = useState("");
+  const [opacity, setOpacity] = useState(0.65);
+  const [history, setHistory] = useState<FloorPlan[]>([]);
+  const backgroundImage = p.attachments.find(
+    (a) => a.id === draft?.backgroundId,
+  );
+  const background = useMemo(
+    () => (backgroundImage ? imageDataURL(backgroundImage) : undefined),
+    [backgroundImage],
+  );
+  const existingImage = [...p.attachments]
+    .reverse()
+    .find((a) => a.kind === "plan");
   const [top, setTop] = useState(latest?.topAngle?.toString() || "");
   const [north, setNorth] = useState<KnownNorth>(latest?.north || "magnetic");
   const [assessmentId, setAssessmentId] = useState(
@@ -52,10 +70,11 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
     p.qiAssessments?.at(-1);
   const result = live || lastAssessment;
   useActivity("quick-floor-plan", dirty || working);
-  const change = (edit: (plan: FloorPlan) => void) => {
+  const change = (edit: (plan: FloorPlan) => void, remember = true) => {
     if (!draft || readOnly) return;
     const next = structuredClone(draft);
     edit(next);
+    if (remember) setHistory((prev) => [...prev.slice(-29), draft]);
     setDraft(next);
     setDirty(true);
     setLive(null);
@@ -67,6 +86,8 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
         return;
       const plan = templatePlan(template, Number(width), Number(height));
       setDraft(plan);
+      setHistory([]);
+      setTool("room");
       setSelected(plan.rooms[0]?.id || "");
       setTop("");
       setDirty(true);
@@ -76,6 +97,144 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
       setError((e as Error).message);
     }
   }
+  async function importImage(file: File) {
+    if (
+      draft?.rooms.length &&
+      !confirm("导入新底图并重新描画？已保存的户型修订会保留。")
+    )
+      return;
+    setWorking(true);
+    try {
+      const image = await prepareImage(file, "plan");
+      const plan = templatePlan("blank", Number(width), Number(height));
+      plan.backgroundId = image.id;
+      await app.mutate((data) => {
+        const project = data.projects.find((x) => x.id === p.id)!;
+        project.attachments.push(image);
+        project.updatedAt = nowISO();
+      });
+      beginTracing(plan);
+      app.announce("底图已导入，拖框即可建立房间或过道");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+  function beginTracing(plan: FloorPlan) {
+    setDraft(plan);
+    setSelected("");
+    setSelectedOpening("");
+    setTop("");
+    setHistory([]);
+    setTool("room");
+    setDirty(true);
+    setLive(null);
+    setError("");
+  }
+  function draw(from: PlanPoint, to: PlanPoint) {
+    if (!draft || readOnly) return;
+    try {
+      const use = tool === "corridor" ? "走廊" : drawUse;
+      const name = tool === "corridor" ? "过道" : use;
+      const count = draft.rooms.filter((r) => r.use === use).length;
+      const created = drawnRoom(
+        draft,
+        from,
+        to,
+        `${name}${count ? count + 1 : ""}`,
+        use,
+      );
+      change((plan) => plan.rooms.push(created));
+      setSelected(created.id);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  function place(roomId: string, point: PlanPoint) {
+    if (!draft || readOnly) return;
+    try {
+      const created = openingAt(
+        draft,
+        roomId,
+        point,
+        tool === "window" ? "window" : "door",
+        tool === "entrance",
+      );
+      change((plan) => {
+        if (created.entrance)
+          plan.openings.forEach((o) => (o.entrance = false));
+        plan.openings.push(created);
+      });
+      setSelected(roomId);
+      setSelectedOpening(created.id);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  function resize(id: string, width: number, height: number) {
+    if (!draft || readOnly) return;
+    const next = structuredClone(draft);
+    const room = next.rooms.find((r) => r.id === id)!;
+    const minimum = room.use === "走廊" ? 0.5 : 1;
+    room.width = Math.max(
+      minimum,
+      Math.min(next.width - room.x, Math.round(width * 4) / 4),
+    );
+    room.height = Math.max(
+      minimum,
+      Math.min(next.height - room.y, Math.round(height * 4) / 4),
+    );
+    if (planIssues(next).length) return;
+    change(
+      (plan) =>
+        Object.assign(
+          plan.rooms.find((r) => r.id === id)!,
+          room,
+        ),
+      false,
+    );
+  }
+  function applySize() {
+    if (!draft) return;
+    try {
+      const next = structuredClone(draft);
+      const dimensions = templatePlan("blank", Number(width), Number(height));
+      const sx = dimensions.width / draft.width,
+        sy = dimensions.height / draft.height;
+      next.width = dimensions.width;
+      next.height = dimensions.height;
+      next.rooms.forEach((r) => {
+        r.x *= sx;
+        r.y *= sy;
+        r.width *= sx;
+        r.height *= sy;
+      });
+      next.obstacles.forEach((o) => {
+        o.x *= sx;
+        o.y *= sy;
+        o.width *= sx;
+        o.height *= sy;
+      });
+      next.openings.forEach((o) => {
+        o.width *= o.wall === "north" || o.wall === "south" ? sx : sy;
+      });
+      validateFloorPlan(next);
+      change((plan) => Object.assign(plan, next));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  function undo() {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setDraft(previous);
+    setHistory(history.slice(0, -1));
+    setSelectedOpening("");
+    setDirty(true);
+    setLive(null);
+    setError("");
+  }
   function updateRoom(update: Partial<Room>) {
     if (!room) return;
     change((plan) => {
@@ -83,14 +242,14 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
       Object.assign(current, update);
     });
   }
-  function addRoom() {
+  function addRoom(use: Room["use"] = "其他") {
     if (!draft) return;
     let placed: Room | null = null;
     for (let y = 0; y <= draft.height - 2 && !placed; y += 0.25)
       for (let x = 0; x <= draft.width - 2 && !placed; x += 0.25) {
         const candidate = makeRoom(
-          roomName.trim() || "新房间",
-          "其他",
+          use === "走廊" ? "过道" : roomName.trim() || "新房间",
+          use,
           x,
           y,
           2,
@@ -110,42 +269,26 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
     const newRoom = placed;
     change((plan) => plan.rooms.push(newRoom));
     setSelected(newRoom.id);
+    setTool("select");
   }
   function opening(kind: Opening["kind"]) {
     if (!room || !draft) return;
-    const walls: Wall[] = ["north", "east", "south", "west"];
-    let candidate: Opening = {
-      id: uid(),
-      roomId: room.id,
-      kind,
-      wall: "north",
-      position: 0.5,
-      width: kind === "door" ? 0.8 : Math.min(1.2, room.width * 0.6),
-      entrance: false,
-      operable: true,
-    };
-    for (const wall of walls) {
-      candidate = {
-        ...candidate,
-        wall,
-        width:
-          kind === "door"
-            ? 0.8
-            : Math.min(
-                1.2,
-                (wall === "north" || wall === "south"
-                  ? room.width
-                  : room.height) * 0.6,
-              ),
-      };
-      const neighbors = neighboringRooms(draft, candidate);
-      if (kind === "door" || !neighbors.length) {
-        if (kind === "door" && neighbors.length)
-          candidate.toRoomId = neighbors[0].id;
-        break;
+    for (const point of [
+      { x: room.x + room.width / 2, y: room.y },
+      { x: room.x + room.width, y: room.y + room.height / 2 },
+      { x: room.x + room.width / 2, y: room.y + room.height },
+      { x: room.x, y: room.y + room.height / 2 },
+    ]) {
+      try {
+        const candidate = openingAt(draft, room.id, point, kind);
+        change((plan) => plan.openings.push(candidate));
+        setSelectedOpening(candidate.id);
+        return;
+      } catch {
+        // 尝试下一面墙，所有墙均不可用时引导图上指定位置。
       }
     }
-    change((plan) => plan.openings.push(candidate));
+    setError("没有可用的墙面中点，请用点墙工具选择具体位置。");
   }
   async function save(): Promise<FloorPlan | null> {
     try {
@@ -248,7 +391,9 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
   }
   function move(id: string, x: number, y: number) {
     if (!draft || readOnly) return;
-    setDraft(moveRoom(draft, id, x, y));
+    const next = moveRoom(draft, id, x, y);
+    if (planIssues(next).length) return;
+    setDraft(next);
     setDirty(true);
     setLive(null);
   }
@@ -256,44 +401,86 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
   return (
     <section id="quick-floor-plan" className="card quick-floor-plan">
       <div className="section-title">
-        <h2>快捷建立户型与室内气评估</h2>
+        <h2>导入户型图，快速建立房间</h2>
         <span className="pill">可编辑示意</span>
       </div>
       <p className="muted">
-        没有图纸也能开始：选择模板，调整房间、门窗和入口，再确认实际布局。
+        ① 导入底图　② 拖框画房间／过道　③ 点墙加门窗，保存户型。
       </p>
-      <fieldset disabled={readOnly}>
-        <legend>一键户型模板</legend>
-        <div className="form-grid">
-          <label>
-            户型总宽（m）
-            <input
-              type="number"
-              min="4"
-              max="40"
-              step=".25"
-              value={width}
-              onChange={(e) => setWidth(e.target.value)}
-            />
-          </label>
-          <label>
-            户型总深（m）
-            <input
-              type="number"
-              min="4"
-              max="40"
-              step=".25"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-            />
-          </label>
-        </div>
-        <div className="button-row">
-          <button onClick={() => make("blank")}>空白户型</button>
-          <button onClick={() => make("one-bedroom")}>一室一厅</button>
-          <button onClick={() => make("two-bedroom")}>两室一厅</button>
-        </div>
+      <fieldset disabled={readOnly || working} className="plan-import">
+        <legend>第一步 · 导入户型图</legend>
+        <label>
+          导入户型图作为底图
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void importImage(file);
+            }}
+          />
+        </label>
+        <p className="muted">
+          支持 PNG／JPEG／WebP。先用默认尺寸描画，也可填写图纸的实际总宽、总深。
+        </p>
+        {!draft && existingImage && (
+          <button
+            onClick={() => {
+              try {
+                const plan = templatePlan(
+                  "blank",
+                  Number(width),
+                  Number(height),
+                );
+                plan.backgroundId = existingImage.id;
+                beginTracing(plan);
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            用已导入图纸建房间
+          </button>
+        )}
+        {working && <p role="status">正在处理户型图…</p>}
       </fieldset>
+      <details className="plan-start-options" open={!draft}>
+        <summary>户型尺寸与无图模板</summary>
+        <fieldset disabled={readOnly || working}>
+          <legend>一键户型模板</legend>
+          <div className="form-grid">
+            <label>
+              户型总宽（m）
+              <input
+                type="number"
+                min="4"
+                max="40"
+                step=".25"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+              />
+            </label>
+            <label>
+              户型总深（m）
+              <input
+                type="number"
+                min="4"
+                max="40"
+                step=".25"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+              />
+            </label>
+          </div>
+          {draft && <button onClick={applySize}>应用尺寸到当前户型</button>}
+          <div className="button-row">
+            <button onClick={() => make("blank")}>空白户型</button>
+            <button onClick={() => make("one-bedroom")}>一室一厅</button>
+            <button onClick={() => make("two-bedroom")}>两室一厅</button>
+          </div>
+        </fieldset>
+      </details>
       {error && (
         <p className="inline-error" role="alert">
           {error}
@@ -303,17 +490,111 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
         <>
           <div className="sketch-layout">
             <div>
+              <fieldset className="plan-tools" disabled={readOnly || working}>
+                <legend>第二步 · 画房间，再点墙加门窗</legend>
+                <div
+                  className="button-row"
+                  role="group"
+                  aria-label="户型绘图工具"
+                >
+                  {(
+                    [
+                      ["select", "选择／移动"],
+                      ["room", "画房间"],
+                      ["corridor", "画过道"],
+                      ["door", "点墙加门"],
+                      ["window", "点墙加窗"],
+                      ["entrance", "主入口"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      aria-pressed={tool === value}
+                      className={tool === value ? "primary" : ""}
+                      onClick={() => {
+                        setTool(value);
+                        setError("");
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button disabled={!history.length} onClick={undo}>
+                    撤销上一步
+                  </button>
+                </div>
+                {tool === "room" && (
+                  <label>
+                    绘制房间用途
+                    <select
+                      value={drawUse}
+                      onChange={(e) =>
+                        setDrawUse(e.target.value as Room["use"])
+                      }
+                    >
+                      {ROOM_USES.filter((use) => use !== "走廊").map((use) => (
+                        <option key={use}>{use}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <p className="tool-hint" role="status">
+                  {tool === "select"
+                    ? "点击选中房间，拖动移动；拖动右下角金色方块调整大小。"
+                    : tool === "room"
+                      ? "在底图上从一个角拖到另一个角，松开即可建立房间，可连续绘制。"
+                      : tool === "corridor"
+                        ? "拖框画出过道范围，再用“点墙加门”连接两侧房间。"
+                        : `点击房间边缘的墙线添加${tool === "window" ? "窗" : tool === "entrance" ? "主入口" : "门"}。内门会自动连接邻接房间。`}
+                </p>
+                <div className="button-row">
+                  <button
+                    className="primary"
+                    disabled={app.pending > 0}
+                    onClick={() => void save()}
+                  >
+                    保存户型
+                  </button>
+                  <span className="muted">
+                    {draft.rooms.length} 个房间／过道 · {draft.openings.length}{" "}
+                    处门窗{dirty ? " · 未保存" : " · 已保存"}
+                  </span>
+                </div>
+              </fieldset>
               <FloorPlanCanvas
                 plan={draft}
                 selected={room?.id}
                 onSelect={setSelected}
                 onMove={readOnly ? undefined : move}
+                onResize={readOnly ? undefined : resize}
+                onDraw={readOnly ? undefined : draw}
+                onPlace={readOnly ? undefined : place}
+                onOpeningSelect={setSelectedOpening}
+                onEditStart={() =>
+                  setHistory((prev) => [...prev.slice(-29), draft])
+                }
+                tool={readOnly ? "select" : tool}
+                background={background}
+                backgroundOpacity={opacity}
                 findings={
                   result && result.planId === latest?.id && !dirty
                     ? result.findings
                     : []
                 }
               />
+              {background && (
+                <label>
+                  底图透明度
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step=".05"
+                    value={opacity}
+                    onChange={(e) => setOpacity(Number(e.target.value))}
+                  />
+                </label>
+              )}
               <p className="diagram-legend">
                 <span>绿线：门</span>
                 <span>蓝线：窗</span>
@@ -419,7 +700,10 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
                   onChange={(e) => setRoomName(e.target.value)}
                 />
               </label>
-              <button onClick={addRoom}>添加房间</button>
+              <div className="button-row">
+                <button onClick={() => addRoom()}>添加房间</button>
+                <button onClick={() => addRoom("走廊")}>添加过道</button>
+              </div>
             </fieldset>
           </div>
           {room && (
@@ -449,7 +733,15 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
               {draft.openings
                 .filter((o) => o.roomId === room.id)
                 .map((o) => (
-                  <details className="opening-editor" key={o.id}><summary>{o.kind==="door"?"门":"窗"} · {WALL_LABEL[o.wall]} · {o.width}m{o.entrance?" · 主入口":""}</summary>
+                  <details
+                    className="opening-editor"
+                    key={o.id}
+                    open={selectedOpening === o.id}
+                  >
+                    <summary>
+                      {o.kind === "door" ? "门" : "窗"} · {WALL_LABEL[o.wall]} ·{" "}
+                      {o.width}m{o.entrance ? " · 主入口" : ""}
+                    </summary>
                     <strong>{o.kind === "door" ? "门" : "窗"}</strong>
                     <div className="form-grid">
                       <label>
@@ -577,7 +869,8 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
               {draft.obstacles
                 .filter((o) => o.roomId === room.id)
                 .map((o) => (
-                  <details className="opening-editor" key={o.id}><summary>{o.name} · 障碍物</summary>
+                  <details className="opening-editor" key={o.id}>
+                    <summary>{o.name} · 障碍物</summary>
                     <label>
                       障碍物名称
                       <input
@@ -808,18 +1101,21 @@ export function QuickFloorPlan({ project: p }: { project: Project }) {
                             : "待补充"}
                       </span>
                       <h4>{f.title}</h4>
-                      <details><summary>依据与改善建议</summary><p>
-                        <strong>依据：</strong>
-                        {f.evidence}
-                      </p>
-                      <p>
-                        <strong>解释：</strong>
-                        {f.interpretation}
-                      </p>
-                      <p>
-                        <strong>建议：</strong>
-                        {f.advice}
-                      </p></details>
+                      <details>
+                        <summary>依据与改善建议</summary>
+                        <p>
+                          <strong>依据：</strong>
+                          {f.evidence}
+                        </p>
+                        <p>
+                          <strong>解释：</strong>
+                          {f.interpretation}
+                        </p>
+                        <p>
+                          <strong>建议：</strong>
+                          {f.advice}
+                        </p>
+                      </details>
                     </article>
                   ))}
                 </div>

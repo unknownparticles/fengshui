@@ -10,6 +10,7 @@ import {
   NORTH_LABEL,
   RULE_VERSION,
   type KnownNorth,
+  type North,
 } from "../../domain/direction";
 import {
   nowISO,
@@ -30,7 +31,7 @@ export function DevicePanel({
   kind: "facing" | "sitting";
   onPreview: (
     angle: number | null,
-    north?: KnownNorth,
+    north?: North,
     stable?: boolean,
     status?: string,
   ) => void;
@@ -41,8 +42,7 @@ export function DevicePanel({
   const app = useApp();
   const [state, setState] = useState<OrientationState>({
     active: false,
-    status:
-      "设备姿态角不一定以北为零。对准实体罗盘或已知方向校准后，可连续测量。",
+    status: "点击启动，允许方向权限，竖屏平放手机即可查看指南针。",
     samples: [],
     started: 0,
   });
@@ -75,9 +75,10 @@ export function DevicePanel({
       (next) => {
         setState(next);
         const q = sampleQuality(next.samples, Date.now(), next.started);
+        const last = next.samples.at(-1);
         callbacks.current.onPreview(
-          next.calibration ? q.angle : null,
-          next.calibration?.north,
+          last && Date.now() - last.at <= 2000 ? q.angle : null,
+          last?.north,
           q.stable,
           q.status,
         );
@@ -117,24 +118,32 @@ export function DevicePanel({
         session.current!.state.started,
       );
       const c = session.current!.state.calibration;
-      if (!q.stable || q.angle === null || !c) throw new Error(q.status);
+      const latest = q.samples.at(-1);
+      if (
+        !q.stable ||
+        q.angle === null ||
+        !latest ||
+        latest.north === "unknown"
+      )
+        throw new Error(q.status);
+      const referenceNorth = c?.north || latest.north;
       const measurement: Measurement = {
         id: uid(),
         pointId: point.id,
         object: point.object,
         kind,
         rawAngle: q.angle,
-        rawNorth: c.north,
+        rawNorth: referenceNorth,
         angle: q.angle,
-        north: c.north,
-        source: `人工参考校准 · ${last?.source || c.adapter}`,
-        calibration: structuredClone(c),
+        north: referenceNorth,
+        source: `${c ? "人工参考校准" : "设备指南针"} · ${latest.source}`,
+        calibration: c ? structuredClone(c) : undefined,
         createdAt: nowISO(),
         timezone: timezone(),
         ruleVersion: RULE_VERSION,
         samples: structuredClone(q.samples),
         quality: {
-          status: "人工参考校准 · " + q.status,
+          status: `${c ? "人工参考校准" : "设备报告北向"} · ` + q.status,
           accuracy: q.accuracy,
           spread: q.spread,
           count: q.count,
@@ -151,7 +160,7 @@ export function DevicePanel({
   lockRef.current = lock;
   return (
     <section className="card device-panel">
-      <h2>设备测量与校准</h2>
+      <h2>手机指南针</h2>
       <p
         role="status"
         className={quality.stable ? "success-text" : "warning-text"}
@@ -159,58 +168,87 @@ export function DevicePanel({
         {state.status}
       </p>
       <p className="muted">
-        先对准一个明确的已知方向，填写实体罗盘或图纸参考读数。校准基准用于本次会话，切后台或改变姿态后需重新校准。
+        手机顶部指向测量方向。支持罗盘的设备直接显示读数；只有相对姿态的设备需先校准。设备报告的北向与精度建议用实体罗盘复核。
       </p>
       <div className="button-row">
         {!active ? (
           <button
-            disabled={locked}
+            className="primary"
+            disabled={locked || state.status === "等待设备权限"}
             onClick={() => void session.current?.start()}
           >
             启动设备检测
           </button>
         ) : (
-          <button onClick={() => session.current?.stop()}>停止设备检测</button>
+          <>
+            <button onClick={() => session.current?.stop()}>
+              停止设备检测
+            </button>
+            {(!last || Date.now() - last.at > 2000) && (
+              <button onClick={() => void session.current?.start()}>
+                重新启动指南针
+              </button>
+            )}
+          </>
         )}
       </div>
       {active && (
         <>
-          <fieldset disabled={locked}>
-            <legend>人工参考校准</legend>
-            <label>
-              已知参考角度（度）
-              <input
-                type="number"
-                min="0"
-                max="360"
-                step="any"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="保持手机指向参考方向，例如 180°"
-              />
-            </label>
-            <label>
-              校准参考北
-              <select
-                value={north}
-                onChange={(e) => setNorth(e.target.value as KnownNorth)}
-              >
-                <option value="magnetic">磁北</option>
-                <option value="true">真北</option>
-              </select>
-            </label>
-            <label>
-              校准依据
-              <input
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-                placeholder="例如：实体罗盘读数，或已确认的图纸北向"
-              />
-            </label>
-            <button onClick={calibrate} disabled={!last}>
-              对准参考方向并校准
-            </button>
-          </fieldset>
+          {last && (
+            <div className="quality-card">
+              <div>
+                <strong>
+                  {Date.now() - last.at <= 2000 && quality.angle != null
+                    ? `${quality.angle.toFixed(1)}° · ${NORTH_LABEL[last.north]}`
+                    : "等待新鲜方向数据"}
+                </strong>
+                <p>
+                  {last.north === "unknown"
+                    ? "当前为相对角度，校准后才能作为方位测量。"
+                    : `${state.calibration ? "人工参考校准" : "设备报告北向"} · ${quality.status}`}
+                </p>
+              </div>
+            </div>
+          )}
+          <details open={last?.north === "unknown"}>
+            <summary>校准方向（相对姿态设备必需）</summary>
+            <fieldset disabled={locked}>
+              <legend>人工参考校准</legend>
+              <label>
+                已知参考角度（度）
+                <input
+                  type="number"
+                  min="0"
+                  max="360"
+                  step="any"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="保持手机指向参考方向，例如 180°"
+                />
+              </label>
+              <label>
+                校准参考北
+                <select
+                  value={north}
+                  onChange={(e) => setNorth(e.target.value as KnownNorth)}
+                >
+                  <option value="magnetic">磁北</option>
+                  <option value="true">真北</option>
+                </select>
+              </label>
+              <label>
+                校准依据
+                <input
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  placeholder="例如：实体罗盘读数，或已确认的图纸北向"
+                />
+              </label>
+              <button onClick={calibrate} disabled={!last}>
+                对准参考方向并校准
+              </button>
+            </fieldset>
+          </details>
           {state.calibration && (
             <div className="quality-card">
               <div>
@@ -239,7 +277,7 @@ export function DevicePanel({
             }
             onClick={lock}
           >
-            锁定校准测量
+            {state.calibration ? "锁定校准测量" : "锁定设备测量"}
           </button>
         </>
       )}
@@ -258,7 +296,7 @@ export function DevicePanel({
             参考北：
             {state.calibration
               ? `人工参考${NORTH_LABEL[state.calibration.north]}`
-              : "未校准"}{" "}
+              : `设备报告${NORTH_LABEL[last.north]}`}{" "}
             · 竖屏：{last.portrait ? "是" : "否"}
           </p>
           <p>

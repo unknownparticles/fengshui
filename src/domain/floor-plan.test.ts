@@ -5,6 +5,8 @@ import {
   planIssues,
   moveRoom,
   openingGeometry,
+  drawnRoom,
+  openingAt,
 } from "./floor-plan";
 import { assessIndoor, segmentHitsRect } from "./indoor-qi";
 import { createBackup, readBackup, remapConflicts } from "./backup";
@@ -30,6 +32,39 @@ describe("快捷户型与室内气检查", () => {
     const q = templatePlan("two-bedroom");
     q.openings.find((o) => o.toRoomId)!.toRoomId = "missing";
     expect(planIssues(q).some((i) => i.includes("邻接"))).toBe(true);
+  });
+  it("反向拖框吸附网格，过道可以窄于普通房间，重叠不会建立", () => {
+    const p = templatePlan("blank");
+    p.rooms.push(
+      drawnRoom(p, { x: 4.1, y: 4 }, { x: -1, y: 0 }, "卧室", "卧室"),
+    );
+    expect(p.rooms[0]).toMatchObject({ x: 0, y: 0, width: 4, height: 4 });
+    p.rooms.push(
+      drawnRoom(p, { x: 4, y: 0 }, { x: 4.5, y: 8 }, "过道", "走廊"),
+    );
+    expect(() => validateFloorPlan(p)).not.toThrow();
+    expect(() =>
+      drawnRoom(p, { x: 1, y: 1 }, { x: 3, y: 3 }, "重叠", "卧室"),
+    ).toThrow("重叠");
+    expect(() =>
+      drawnRoom(p, { x: 5, y: 0 }, { x: 5.5, y: 2 }, "太窄", "卧室"),
+    ).toThrow("尺寸不足");
+  });
+  it("点墙建立内门自动关联过道，窗和主入口不能放内墙", () => {
+    const p = templatePlan("blank");
+    p.rooms.push(drawnRoom(p, { x: 0, y: 0 }, { x: 4, y: 4 }, "卧室", "卧室"));
+    p.rooms.push(drawnRoom(p, { x: 4, y: 0 }, { x: 5, y: 8 }, "过道", "走廊"));
+    const r = p.rooms[0];
+    const point = { x: 4, y: 2 };
+    const door = openingAt(p, r.id, point, "door");
+    expect(door.toRoomId).toBe(p.rooms[1].id);
+    expect(() => openingAt(p, r.id, point, "window")).toThrow("内墙");
+    expect(() => openingAt(p, r.id, point, "door", true)).toThrow("主入口");
+    p.openings.push(door);
+    expect(() => openingAt(p, r.id, point, "door")).toThrow("已有门窗");
+    const window = openingAt(p, r.id, { x: 0.1, y: 0 }, "window");
+    expect(openingGeometry(p, window).start.x).toBeCloseTo(0);
+    expect(() => openingAt(p, r.id, { x: 2, y: 2 }, "door")).toThrow("边缘");
   });
   it("未确认模板与未知感受不产生肯定气场结论", () => {
     const p = templatePlan("two-bedroom");
@@ -88,6 +123,22 @@ describe("快捷户型与室内气检查", () => {
   it("户型与气评估备份、副本和历史报告一致", async () => {
     const p = newProject("室内测试");
     const plan = templatePlan("two-bedroom");
+    const image = {
+      id: crypto.randomUUID(),
+      kind: "plan" as const,
+      mime: "image/png" as const,
+      width: 1,
+      height: 1,
+      bytes: Uint8Array.from(
+        atob(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+        ),
+        (c) => c.charCodeAt(0),
+      ),
+      createdAt: p.createdAt,
+    };
+    p.attachments.push(image);
+    plan.backgroundId = image.id;
     plan.layoutConfirmed = true;
     plan.rooms[0].notes = "<script>不执行</script>";
     p.floorPlans = [plan];
@@ -101,6 +152,13 @@ describe("快捷户型与室内气检查", () => {
     expect(restored).toEqual(p);
     const copy = remapConflicts([p], [p])[0];
     expect(copy.floorPlans![0].id).not.toBe(plan.id);
+    expect(copy.floorPlans![0].backgroundId).toBe(copy.attachments[0].id);
+    expect(copy.qiAssessments![0].plan.backgroundId).toBe(
+      copy.attachments[0].id,
+    );
+    expect(copy.reports[0].snapshot.floorPlans![0].backgroundId).toBe(
+      copy.reports[0].snapshot.attachments[0].id,
+    );
     expect(copy.qiAssessments![0].planId).toBe(copy.floorPlans![0].id);
     expect(copy.qiAssessments![0].plan.rooms[0].id).toBe(
       copy.floorPlans![0].rooms[0].id,

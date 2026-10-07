@@ -1,8 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   openingGeometry,
   ROOM_USES,
   type FloorPlan,
+  type PlanPoint,
 } from "../../domain/floor-plan";
 import type { QiFinding } from "../../domain/indoor-qi";
 const COLORS = [
@@ -13,17 +14,35 @@ const COLORS = [
   "#f2efe3",
   "#ecede7",
 ];
+export type PlanTool =
+  "select" | "room" | "corridor" | "door" | "window" | "entrance";
 export function FloorPlanCanvas({
   plan,
   selected,
   onSelect,
   onMove,
+  onResize,
+  onDraw,
+  onPlace,
+  onOpeningSelect,
+  onEditStart,
+  tool = "select",
+  background,
+  backgroundOpacity = 0.65,
   findings = [],
 }: {
   plan: FloorPlan;
   selected?: string;
   onSelect?: (id: string) => void;
   onMove?: (id: string, x: number, y: number) => void;
+  onResize?: (id: string, width: number, height: number) => void;
+  onDraw?: (from: PlanPoint, to: PlanPoint) => void;
+  onPlace?: (id: string, point: PlanPoint) => void;
+  onOpeningSelect?: (id: string) => void;
+  onEditStart?: () => void;
+  tool?: PlanTool;
+  background?: string;
+  backgroundOpacity?: number;
   findings?: QiFinding[];
 }) {
   const svg = useRef<SVGSVGElement | null>(null);
@@ -32,6 +51,18 @@ export function FloorPlanCanvas({
     offsetX: number;
     offsetY: number;
   } | null>(null);
+  const drawing = useRef<PlanPoint | null>(null);
+  const resizing = useRef<string | null>(null);
+  const [preview, setPreview] = useState<{
+    from: PlanPoint;
+    to: PlanPoint;
+  } | null>(null);
+  const cancel = () => {
+    dragging.current = null;
+    drawing.current = null;
+    resizing.current = null;
+    setPreview(null);
+  };
   const locate = (x: number, y: number) => {
     const element = svg.current!;
     const point = element.createSVGPoint();
@@ -44,25 +75,60 @@ export function FloorPlanCanvas({
     <svg
       ref={svg}
       className="floor-plan-canvas"
-      style={{ touchAction: onMove ? "none" : "auto" }}
+      style={{
+        touchAction: onMove || onDraw || onPlace ? "none" : "auto",
+        cursor: tool === "select" ? undefined : "crosshair",
+      }}
       viewBox={`-.6 -.6 ${plan.width + 1.2} ${plan.height + 1.2}`}
       role="img"
       aria-label={`户型示意，${plan.rooms.length} 个房间，${plan.width}m × ${plan.height}m`}
-      onPointerMove={(e) => {
-        if (!dragging.current || !onMove) return;
+      tabIndex={onDraw ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") cancel();
+      }}
+      onPointerDown={(e) => {
+        if (e.button !== 0 || !e.isPrimary) return;
         const point = locate(e.clientX, e.clientY);
+        if ((tool === "room" || tool === "corridor") && onDraw) {
+          drawing.current = point;
+          setPreview({ from: point, to: point });
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } else if (onPlace && ["door", "window", "entrance"].includes(tool)) {
+          const room = plan.rooms.find(
+            (r) =>
+              point.x >= r.x - 0.05 &&
+              point.x <= r.x + r.width + 0.05 &&
+              point.y >= r.y - 0.05 &&
+              point.y <= r.y + r.height + 0.05,
+          );
+          onPlace(room?.id || "", point);
+        }
+      }}
+      onPointerMove={(e) => {
+        const point = locate(e.clientX, e.clientY);
+        if (drawing.current) {
+          setPreview({ from: drawing.current, to: point });
+          return;
+        }
+        if (resizing.current && onResize) {
+          const room = plan.rooms.find((r) => r.id === resizing.current)!;
+          onResize(room.id, point.x - room.x, point.y - room.y);
+          return;
+        }
+        if (!dragging.current || !onMove) return;
         onMove(
           dragging.current.id,
           point.x - dragging.current.offsetX,
           point.y - dragging.current.offsetY,
         );
       }}
-      onPointerUp={() => {
-        dragging.current = null;
+      onPointerUp={(e) => {
+        if (drawing.current)
+          onDraw?.(drawing.current, locate(e.clientX, e.clientY));
+        cancel();
       }}
-      onPointerCancel={() => {
-        dragging.current = null;
-      }}
+      onPointerCancel={cancel}
+      onLostPointerCapture={cancel}
     >
       <defs>
         <pattern
@@ -88,12 +154,27 @@ export function FloorPlanCanvas({
         stroke="#66796d"
         strokeWidth=".04"
       />
+      {background && (
+        <image
+          href={background}
+          x="0"
+          y="0"
+          width={plan.width}
+          height={plan.height}
+          preserveAspectRatio="none"
+          opacity={backgroundOpacity}
+          pointerEvents="none"
+        />
+      )}
       {plan.rooms.map((room) => (
         <g
           key={room.id}
           onPointerDown={(e) => {
+            if (tool !== "select" || e.button !== 0 || !e.isPrimary) return;
+            e.stopPropagation();
             onSelect?.(room.id);
             if (onMove) {
+              onEditStart?.();
               const point = locate(e.clientX, e.clientY);
               dragging.current = {
                 id: room.id,
@@ -111,6 +192,7 @@ export function FloorPlanCanvas({
             width={room.width}
             height={room.height}
             fill={COLORS[ROOM_USES.indexOf(room.use)] || COLORS[5]}
+            fillOpacity={background ? 0.3 : 1}
             stroke={selected === room.id ? "#9c762a" : "#3f5146"}
             strokeWidth={selected === room.id ? 0.08 : 0.05}
           />
@@ -134,6 +216,31 @@ export function FloorPlanCanvas({
           </text>
         </g>
       ))}
+      {tool === "select" &&
+        onResize &&
+        plan.rooms
+          .filter((r) => r.id === selected)
+          .map((room) => (
+            <rect
+              key={`resize-${room.id}`}
+              x={room.x + room.width - 0.22}
+              y={room.y + room.height - 0.22}
+              width=".44"
+              height=".44"
+              fill="#9c762a"
+              stroke="white"
+              strokeWidth=".04"
+              style={{ cursor: "nwse-resize" }}
+              aria-label="拖动调整房间大小"
+              onPointerDown={(e) => {
+                if (e.button !== 0 || !e.isPrimary) return;
+                e.stopPropagation();
+                onEditStart?.();
+                resizing.current = room.id;
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+            />
+          ))}
       {plan.obstacles.map((o) => (
         <g key={o.id}>
           <rect
@@ -161,7 +268,24 @@ export function FloorPlanCanvas({
         .map((o) => {
           const { start, end, center } = openingGeometry(plan, o);
           return (
-            <g key={o.id}>
+            <g
+              key={o.id}
+              onPointerDown={(e) => {
+                if (tool === "select" && onOpeningSelect) {
+                  e.stopPropagation();
+                  onSelect?.(o.roomId);
+                  onOpeningSelect(o.id);
+                }
+              }}
+            >
+              <line
+                x1={start.x}
+                y1={start.y}
+                x2={end.x}
+                y2={end.y}
+                stroke="transparent"
+                strokeWidth=".4"
+              />
               <line
                 x1={start.x}
                 y1={start.y}
@@ -213,6 +337,20 @@ export function FloorPlanCanvas({
             strokeDasharray=".16 .1"
           />
         ))}
+      {preview && (
+        <rect
+          x={Math.max(0, Math.min(preview.from.x, preview.to.x))}
+          y={Math.max(0, Math.min(preview.from.y, preview.to.y))}
+          width={Math.abs(preview.from.x - preview.to.x)}
+          height={Math.abs(preview.from.y - preview.to.y)}
+          fill="#9c762a"
+          fillOpacity=".15"
+          stroke="#9c762a"
+          strokeWidth=".05"
+          strokeDasharray=".12 .08"
+          pointerEvents="none"
+        />
+      )}
       <text
         x={plan.width / 2}
         y="-.2"

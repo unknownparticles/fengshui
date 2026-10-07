@@ -64,6 +64,7 @@ export interface FloorPlan {
   topAngle?: number;
   north?: KnownNorth;
   layoutConfirmed: boolean;
+  backgroundId?: string;
 }
 const snap = (value: number) => Math.round(value * 4) / 4;
 export function makeRoom(
@@ -306,8 +307,8 @@ export function planIssues(plan: FloorPlan): string[] {
       ![room.x, room.y, room.width, room.height].every(Number.isFinite) ||
       room.x < 0 ||
       room.y < 0 ||
-      room.width < 1 ||
-      room.height < 1 ||
+      room.width < (room.use === "走廊" ? 0.5 : 1) ||
+      room.height < (room.use === "走廊" ? 0.5 : 1) ||
       room.x + room.width > plan.width + 0.001 ||
       room.y + room.height > plan.height + 0.001
     )
@@ -403,7 +404,101 @@ export function validateFloorPlan(plan: FloorPlan) {
   )
     throw new Error("户型版本或结构不完整");
   const issues = planIssues(plan);
+  if (
+    plan.backgroundId != null &&
+    !/^[a-zA-Z0-9_-]{1,100}$/.test(plan.backgroundId)
+  )
+    throw new Error("底图标识不合法");
   if (issues.length) throw new Error(issues.join("；"));
+}
+export interface PlanPoint {
+  x: number;
+  y: number;
+}
+export function drawnRoom(
+  plan: FloorPlan,
+  from: PlanPoint,
+  to: PlanPoint,
+  name: string,
+  use: RoomUse,
+): Room {
+  const limit = (point: PlanPoint) => ({
+    x: Math.min(plan.width, snap(Math.max(0, point.x))),
+    y: Math.min(plan.height, snap(Math.max(0, point.y))),
+  });
+  const a = limit(from),
+    b = limit(to);
+  const room = makeRoom(
+    name,
+    use,
+    Math.min(a.x, b.x),
+    Math.min(a.y, b.y),
+    Math.abs(a.x - b.x),
+    Math.abs(a.y - b.y),
+  );
+  const issues = planIssues({ ...plan, rooms: [...plan.rooms, room] });
+  if (issues.length) throw new Error(issues.join("；"));
+  return room;
+}
+export function openingAt(
+  plan: FloorPlan,
+  roomId: string,
+  point: PlanPoint,
+  kind: Opening["kind"],
+  entrance = false,
+): Opening {
+  const room = plan.rooms.find((r) => r.id === roomId);
+  if (!room) throw new Error("请点选房间的墙面");
+  const walls: [Wall, number][] = [
+    ["north", Math.abs(point.y - room.y)],
+    ["south", Math.abs(point.y - room.y - room.height)],
+    ["west", Math.abs(point.x - room.x)],
+    ["east", Math.abs(point.x - room.x - room.width)],
+  ];
+  walls.sort((a, b) => a[1] - b[1]);
+  const [wall, distance] = walls[0];
+  if (distance > 0.4) throw new Error("请点击房间边缘的墙线添加门窗");
+  const horizontal = wall === "north" || wall === "south";
+  const length = horizontal ? room.width : room.height;
+  const width = Math.min(kind === "door" ? 0.8 : 1.2, length * 0.8);
+  const offset = horizontal ? point.x - room.x : point.y - room.y;
+  const opening: Opening = {
+    id: uid(),
+    roomId,
+    kind,
+    wall,
+    width,
+    position:
+      Math.max(width / 2, Math.min(length - width / 2, offset)) / length,
+    entrance,
+    operable: true,
+  };
+  const neighbors = neighboringRooms(plan, opening);
+  if (neighbors.length) {
+    if (kind === "window") throw new Error("此处是内墙，请把窗放在外墙上");
+    if (entrance) throw new Error("主入口须放在连接外部空间的墙面上");
+    opening.toRoomId = neighbors[0].id;
+  }
+  if (
+    plan.openings.some(
+      (o) =>
+        o.roomId === roomId &&
+        o.wall === wall &&
+        Math.abs(o.position - opening.position) * length <
+          (o.width + width) / 2,
+    )
+  )
+    throw new Error("此处已有门窗，请选择墙面上的其他位置");
+  const next = {
+    ...plan,
+    openings: [
+      ...plan.openings.map((o) => (entrance ? { ...o, entrance: false } : o)),
+      opening,
+    ],
+  };
+  const issues = planIssues(next);
+  if (issues.length) throw new Error(issues.join("；"));
+  return opening;
 }
 export const diagramBearing = (plan: FloorPlan, dx: number, dy: number) =>
   plan.topAngle == null
